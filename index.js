@@ -1,5 +1,5 @@
 require('dotenv').config()
-const { Telegraf } = require('telegraf');
+const { Telegraf, Extra , Markup } = require('telegraf');
 const mongoose = require('mongoose');
 const fs = require('fs');
 const csv = require('csv-parser');
@@ -101,25 +101,74 @@ function displayMainMenu(ctx, text) {
 
 // Handling "browsing menu" action
 bot.action('browsing_menu', async (ctx) => {
-    try {
-      // Fetch menu items from MongoDB
-      const menuItems = await MenuItem.find();
+  try {
+    // Fetch menu items from MongoDB
+    const menuItems = await MenuItem.find();
   
-      // Check if there are menu items
-      if (menuItems.length > 0) {
-        // Create a message with the menu items
-        const menuMessage = menuItems.map((item) => `${item.itemName}: $${item.price}`).join('\n');
-  
-        // Send the message to the user
-        ctx.reply('Menu:\n' + menuMessage);
-      } else {
-        ctx.reply('Sorry, the menu is currently empty.');
+    // Check if there are menu items
+    if (menuItems.length > 0) {
+      // Chunk the menu items into groups (e.g., 5 items per page)
+      const itemsPerPage = 5;
+
+      const menuPages = [];
+      for (let i = 0; i < menuItems.length; i += itemsPerPage) {
+        const pageItems = menuItems.slice(i, i + itemsPerPage);
+        menuPages.push(pageItems);
       }
-    } catch (error) {
-      console.error('Error fetching menu items:', error);
-    }
-  });
+
+      let currentPage = 0;
+
+      // Create an inline keyboard with previous and next page buttons
+      const inlineKeyboard = () => {
+        const buttons = menuPages[currentPage].map(item => Markup.button.callback(`${item.itemName}: $${item.price}`, `menu_item_${item._id}`));
+
+        const navigationButtons = [
+          [Markup.button.callback('Previous', 'prev_page'), Markup.button.callback('Next', 'next_page')],
+        ];
+        const keyboard = [...buttons];
   
+        // Split buttons into rows with 3 columns
+        while (keyboard.length) {
+          keyboard.splice(3, 0, navigationButtons);
+        }
+        return Markup.inlineKeyboard([...keyboard, ...navigationButtons], { columns: 3 });
+      };
+
+      // Send the first page of menu items
+      ctx.reply('Menu:', inlineKeyboard());
+
+      // Handle button callbacks
+      bot.action(/menu_item_(.+)/, (ctx) => {
+        const itemId = ctx.match[1];
+        // Handle the selected menu item (itemId)
+        // You can implement logic to add the selected item to the user's cart, for example
+        ctx.answerCbQuery(`Selected item: ${itemId}`);
+      });
+
+      bot.action('prev_page', (ctx) => {
+        // Show the previous page
+        if (currentPage > 0) {
+          currentPage--;
+          ctx.editMessageText('Menu:', inlineKeyboard());
+        }
+      });
+
+      bot.action('next_page', (ctx) => {
+        // Show the next page
+        if (currentPage < menuPages.length - 1) {
+          currentPage++;
+          ctx.editMessageText('Menu:', inlineKeyboard());
+        }
+      });
+
+    } else {
+      ctx.reply('Sorry, the menu is currently empty.');
+    }
+  } catch (error) {
+    console.error('Error fetching menu items:', error);
+  }
+});
+
   
   // Handling "customer support" action
   bot.hears('Customer Support', (ctx) => {
