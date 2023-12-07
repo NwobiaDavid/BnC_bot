@@ -46,33 +46,37 @@ bot.start(async (ctx) => {
     ctx.reply('Welcome! Please provide your details (name, matric number, email, hall and room number) IN ORDER.');
 
     // Listen for the user's response to the details prompt
-    bot.on('text', async (ctx) => {
+    function userDetailsHandler(ctx) {
       const userDetails = ctx.message.text.split(','); // Assuming the user provides details separated by commas
       const [name, matricNumber, email, roomNumber] = userDetails.map((detail) => detail.trim());
 
-      try {
-        // Create a new User in the database
-        const newUser = new User({
-          telegramId: ctx.from.id,
-          name,
-          matricNumber,
-          email,
-          roomNumber,
+      // Create a new User in the database
+      const newUser = new User({
+        telegramId: ctx.from.id,
+        name,
+        matricNumber,
+        email,
+        roomNumber,
+      });
+
+      newUser.save()
+        .then(() => {
+          ctx.reply('Thank you! Your details have been saved. What would you like to do today?');
+          // Implement logic for displaying the main menu options
+          displayMainMenu(ctx);
+        })
+        .catch((error) => {
+          console.error('Error creating a new user:', error);
+          ctx.reply('There was an error processing your request. Please try again.');
         });
 
-        await newUser.save();
-        let text = 'Thank you! Your details have been saved. What would you like to do today?';
-        // Implement logic for displaying the main menu options
-        displayMainMenu(ctx,text);
-      } catch (error) {
-        console.error('Error creating a new user:', error);
-        ctx.reply('There was an error processing your request. Please try again.');
-      }
-
       // Remove the event listener to avoid capturing other text messages
-      bot.telegram.off('text');
-    });
-  }else {
+    bot.stop('text', userDetailsHandler);
+    }
+
+    // Listen for the user's response to the details prompt using filter utils
+    ctx.on('text', { text: 'Welcome! Please provide your details' }, userDetailsHandler);
+}else {
     // If yes, display the main menu
     let text = 'Welcome back, ' + existingUser.name + '! What would you like to do today?';
     // Implement logic for displaying the main menu options
@@ -131,18 +135,22 @@ bot.action('browsing_menu', async (ctx) => {
   });
   
   // Handling "change delivery location/room number" action
-  bot.action('Change Delivery Location/Room Number', (ctx) => {
-    // Allow the user to update their delivery information
+  bot.action('change_delivery_location', (ctx) => {
     ctx.reply('Please provide your new delivery information (room number).');
-    // Listen for the user's response and update the database
-    bot.on('text', async (ctx) => {
+  
+    // Define the handler function separately
+    async function updateDeliveryInformationHandler(ctx) {
       const newRoomNumber = ctx.message.text.trim();
       // Update the user's room number in the database
       await User.updateOne({ telegramId: ctx.from.id }, { roomNumber: newRoomNumber });
       ctx.reply('Your delivery information has been updated successfully.');
+  
       // Remove the event listener to avoid capturing other text messages
-      bot.telegram.off('text');
-    });
+      bot.stop('text', updateDeliveryInformationHandler);
+    }
+  
+    // Listen for the user's response and update the database
+    bot.on('text', updateDeliveryInformationHandler);
   });
 
 // Start the bot
