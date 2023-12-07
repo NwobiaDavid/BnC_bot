@@ -12,19 +12,28 @@ mongoose.connect(process.env.MONGO_URI , { useNewUrlParser: true, useUnifiedTopo
 fs.createReadStream('menu.csv')
   .pipe(csv())
   .on('data', async (row) => {
-    // Save each menu item to the MenuItem collection
     try {
-      const menuItem = new MenuItem({
-        itemName: row.item_name,
-        price: row.price,
-      });
-      await menuItem.save();
+      // Check if the menu item already exists in the collection
+      const existingMenuItem = await MenuItem.findOne({ itemName: row.item_name });
+
+      if (existingMenuItem) {
+        // If it exists, update the price
+        existingMenuItem.price = row.price;
+        await existingMenuItem.save();
+      } else {
+        // If it doesn't exist, save a new menu item
+        const menuItem = new MenuItem({
+          itemName: row.item_name,
+          price: row.price,
+        });
+        await menuItem.save();
+      }
     } catch (error) {
-      console.error('Error saving menu item:', error);
+      console.error('Error saving/updating menu item:', error);
     }
   })
   .on('end', () => {
-    console.log('Menu data loaded into MongoDB');
+    console.log('Menu data loaded/updated into MongoDB');
   });
 
 // Start the bot
@@ -87,7 +96,7 @@ function displayMainMenu(ctx, text) {
 
 
 // Handling "browsing menu" action
-bot.hears('Browsing Menu', async (ctx) => {
+bot.action('browsing_menu', async (ctx) => {
     try {
       // Fetch menu items from MongoDB
       const menuItems = await MenuItem.find();
