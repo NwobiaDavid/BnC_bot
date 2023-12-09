@@ -41,11 +41,15 @@ bot.start(async (ctx) => {
 
   if (!existingUser) {
     // If the user doesn't exist, prompt for details and create a new user
-    ctx.reply('Welcome! Please provide your details (name, matric number, email, hall, and room number) IN ORDER.');
+    ctx.reply(
+      'Welcome! Please provide your details (name, matric number, email, hall, and room number) IN ORDER.'
+    );
 
     // Listen for the user's response to the details prompt
     function userDetailsHandler(ctx) {
-      const userDetails = ctx.message.text.split(',').map((detail) => detail.trim());
+      const userDetails = ctx.message.text
+        .split(',')
+        .map((detail) => detail.trim());
       const [name, matricNumber, email, roomNumber] = userDetails;
 
       const newUser = new User({
@@ -59,12 +63,16 @@ bot.start(async (ctx) => {
       newUser
         .save()
         .then(() => {
-          ctx.reply('Thank you! Your details have been saved. What would you like to do today?');
+          ctx.reply(
+            'Thank you! Your details have been saved. What would you like to do today?'
+          );
           displayMainMenu(ctx);
         })
         .catch((error) => {
           console.error('Error creating a new user:', error);
-          ctx.reply('There was an error processing your request. Please try again.');
+          ctx.reply(
+            'There was an error processing your request. Please try again.'
+          );
         });
 
       // Remove the event listener to avoid capturing other text messages
@@ -72,7 +80,11 @@ bot.start(async (ctx) => {
     }
 
     // Listen for the user's response to the details prompt using filter utils
-    ctx.on('text', { text: 'Welcome! Please provide your details' }, userDetailsHandler);
+    ctx.on(
+      'text',
+      { text: 'Welcome! Please provide your details' },
+      userDetailsHandler
+    );
   } else {
     // If the user exists, display the main menu
     const text = `Welcome back, ${existingUser.name}! What would you like to do today?`;
@@ -88,7 +100,12 @@ function displayMainMenu(ctx, text) {
         [{ text: 'Browsing Menu', callback_data: 'browsing_menu' }],
         [{ text: 'Customer Support', callback_data: 'customer_support' }],
         [{ text: 'Manage Cart', callback_data: 'manage_cart' }],
-        [{ text: 'Change Delivery Location/Room Number', callback_data: 'change_delivery_location' }],
+        [
+          {
+            text: 'Change Delivery Location/Room Number',
+            callback_data: 'change_delivery_location',
+          },
+        ],
       ],
     },
   });
@@ -116,7 +133,10 @@ bot.action('browsing_menu', async (ctx) => {
       // Create an inline keyboard with previous and next page buttons
       const inlineKeyboard = () => {
         const buttons = menuPages[currentPage].map((item) => [
-          Markup.button.callback(`${item.itemName}: $${item.price}`, `menu_item_${item._id}`),
+          Markup.button.callback(
+            `${item.itemName}: $${item.price}`,
+            `menu_item_${item._id}`
+          ),
         ]);
 
         const navigationButtons = [
@@ -126,7 +146,9 @@ bot.action('browsing_menu', async (ctx) => {
           ],
         ];
 
-        return Markup.inlineKeyboard([...buttons, ...navigationButtons], { columns: 2 });
+        return Markup.inlineKeyboard([...buttons, ...navigationButtons], {
+          columns: 2,
+        });
       };
 
       // Send the first page of menu items
@@ -140,27 +162,45 @@ bot.action('browsing_menu', async (ctx) => {
           const selectedItem = await MenuItem.findById(itemId);
 
           if (selectedItem) {
+            const user = ctx.from.id;
+      const quantity = 1; // Automatically set quantity to 1
+
+      // Update user's temporary cart
+      updateUserCart(user, itemId, quantity);
+      
             // Create an inline keyboard for the selected menu item
             const itemKeyboard = Markup.inlineKeyboard([
               [
-                Markup.button.callback(`Increase Amount`, `increase_amount_${itemId}`),
-                Markup.button.callback(`Decrease Amount`, `decrease_amount_${itemId}`),
+                Markup.button.callback(
+                  `Increase Amount`,
+                  `increase_amount_${itemId}`
+                ),
+                Markup.button.callback(
+                  `Decrease Amount`,
+                  `decrease_amount_${itemId}`
+                ),
               ],
               [Markup.button.callback(`Add to Cart`, `add_to_cart_${itemId}`)],
             ]);
 
             // Send a message with the selected menu item and the new inline keyboard
-            ctx.reply(`${selectedItem.itemName}: $${selectedItem.price}`, itemKeyboard);
+            ctx.reply(
+              `${selectedItem.itemName}: $${selectedItem.price}  -- Quantity: ${quantity}`,
+              itemKeyboard
+            );
           } else {
             ctx.reply('Sorry, the selected menu item was not found.');
           }
         } catch (error) {
           console.error('Error fetching menu item:', error);
-          ctx.reply('There was an error processing your request. Please try again.');
+          ctx.reply(
+            'There was an error processing your request. Please try again.'
+          );
         }
       });
 
       // Map to store user carts (user_id => { item_id: quantity })
+      const existingCarts = new Map();
       const userCarts = new Map();
 
       // Handle button callbacks for increasing amount
@@ -198,17 +238,20 @@ bot.action('browsing_menu', async (ctx) => {
         // Respond to the user
         ctx.answerCbQuery(`Added item to cart: ${itemId}.`);
       });
-      const existingCarts = new Map();
+
 
       // Function to move items from temporary cart to the actual cart
       function moveItemsToCart(userId) {
         const userCart = userCarts.get(userId) || {};
         const existingCart = existingCarts.get(userId) || {};
-
+      
         Object.keys(userCart).forEach((itemId) => {
           const quantity = userCart[itemId];
           existingCart[itemId] = (existingCart[itemId] || 0) + quantity;
         });
+        // Update the existingCart in the map
+  existingCarts.set(userId, existingCart);
+
 
         // Clear the temporary cart
         userCarts.delete(userId);
@@ -236,13 +279,15 @@ bot.action('browsing_menu', async (ctx) => {
       // Example: Display user's cart
       bot.action('manage_cart', async (ctx) => {
         const userId = ctx.from.id;
-        const userCart = userCarts.get(userId) || {};
+        const existingCart = existingCarts.get(userId) || {};
 
-        if (Object.keys(userCart).length > 0) {
+        if (Object.keys(existingCart).length > 0) {
           const itemDetails = await Promise.all(
-            Object.keys(userCart).map(async (itemId) => {
+            Object.keys(existingCart).map(async (itemId) => {
               const item = await MenuItem.findById(itemId);
-              return item ? { name: item.itemName, quantity: userCart[itemId] } : null;
+              return item
+                ? { name: item.itemName, quantity: existingCart[itemId] }
+                : null;
             })
           );
 
