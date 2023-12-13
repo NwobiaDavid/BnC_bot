@@ -1,8 +1,13 @@
-item_name,price
-Burger,5.99
-Pizza,8.99
-Salad,3.99
-juice,1.99
-coke,1.0
-gala,0.99
-french fries,4.99
+product_id,category,Item,price,quantity
+1,Beverages,Bottled Water,1.50,100
+2,Beverages,Cola,2.00,50
+3,Clothing & Footwear,T-Shirt,15.99,30
+4,Clothing & Footwear,Running Shoes,49.99,20
+5,Groceries,Rice,5.99,80
+6,Groceries,Apples,1.99,50
+7,Accessories,Necklace,29.99,15
+8,Accessories,Backpack,39.99,25
+9,Cleaning,Dish Soap,3.49,40
+10,Cleaning,Broom,9.99,15
+11,Deodorants,Deodorant Stick,4.99,30
+12,Deodorants,Spray Deodorant,5.99,25

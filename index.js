@@ -3,93 +3,21 @@ const { Telegraf, Markup } = require('telegraf');
 const mongoose = require('mongoose');
 const fs = require('fs');
 const csv = require('csv-parser');
-const { User, MenuItem } = require('./models');
+const { User, MenuItem , Category} = require('./models');
+const { loadMenuData } = require('./src/Init');
+const { handleUserDetails } = require('./src/User');
+
+const { Types } = require('mongoose');
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
 mongoose.connect(process.env.MONGO_URI);
+console.log(`connected the the database successfully...`);
 
-// Load CSV menu data into MongoDB
-fs.createReadStream('menu.csv')
-  .pipe(csv())
-  .on('data', async (row) => {
-    try {
-      const existingMenuItem = await MenuItem.findOne({
-        itemName: row.item_name,
-      });
-
-      if (existingMenuItem) {
-        existingMenuItem.price = row.price;
-        await existingMenuItem.save();
-      } else {
-        const menuItem = new MenuItem({
-          itemName: row.item_name,
-          price: row.price,
-        });
-        await menuItem.save();
-      }
-    } catch (error) {
-      console.error('Error saving/updating menu item:', error);
-    }
-  })
-  .on('end', () => {
-    console.log('Menu data loaded/updated into MongoDB');
-  });
+loadMenuData();
 
 // Start the bot
 bot.start(async (ctx) => {
-  const existingUser = await User.findOne({ telegramId: ctx.from.id });
-
-  if (!existingUser) {
-    // If the user doesn't exist, prompt for details and create a new user
-    ctx.reply(
-      'Welcome! Please provide your details (name, matric number, email, hall, and room number) IN ORDER.'
-    );
-
-    // Listen for the user's response to the details prompt
-    function userDetailsHandler(ctx) {
-      const userDetails = ctx.message.text
-        .split(',')
-        .map((detail) => detail.trim());
-      const [name, matricNumber, email, roomNumber] = userDetails;
-
-      const newUser = new User({
-        telegramId: ctx.from.id,
-        name,
-        matricNumber,
-        email,
-        roomNumber,
-      });
-
-      newUser
-        .save()
-        .then(() => {
-          ctx.reply(
-            'Thank you! Your details have been saved. What would you like to do today?'
-          );
-          displayMainMenu(ctx);
-        })
-        .catch((error) => {
-          console.error('Error creating a new user:', error);
-          ctx.reply(
-            'There was an error processing your request. Please try again.'
-          );
-        });
-
-      // Remove the event listener to avoid capturing other text messages
-      bot.stop('text', userDetailsHandler);
-    }
-
-    // Listen for the user's response to the details prompt using filter utils
-    ctx.on(
-      'text',
-      { text: 'Welcome! Please provide your details' },
-      userDetailsHandler
-    );
-  } else {
-    // If the user exists, display the main menu
-    const text = `Welcome back, ${existingUser.name}! What would you like to do today?`;
-    displayMainMenu(ctx, text);
-  }
+ handleUserDetails(ctx, bot, displayMainMenu)
 });
 
 // Function to display the main menu options with buttons
@@ -97,7 +25,7 @@ function displayMainMenu(ctx, text) {
   ctx.reply(text, {
     reply_markup: {
       inline_keyboard: [
-        [{ text: 'Browsing Menu', callback_data: 'browsing_menu' }],
+        [{ text: 'start shopping', callback_data: 'browsing_categories' }],
         [{ text: 'Customer Support', callback_data: 'customer_support' }],
         [{ text: 'Manage Cart', callback_data: 'manage_cart' }],
         [
@@ -110,6 +38,107 @@ function displayMainMenu(ctx, text) {
     },
   });
 }
+
+
+// Handling vendor button clicks
+bot.action('browsing_categories', async (ctx) => {
+  try {
+    // Fetch categories from MongoDB
+    const categories = await Category.find();
+
+    if (categories.length > 0) {
+      const itemsPerPage = 4; // Adjust this based on your preference
+      const categoryPages = [];
+
+      for (let i = 0; i < categories.length; i += itemsPerPage) {
+        const pageCategories = categories.slice(i, i + itemsPerPage);
+        categoryPages.push(pageCategories);
+      }
+
+      let currentPage = 0;
+
+      // Create an inline keyboard with previous and next page buttons for categories
+      const inlineCategoryKeyboard = () => {
+        const buttons = categoryPages[currentPage].map((category) => [
+          Markup.button.callback(`${category.category}`, `category_${category._id}_${category.category}`)
+        ]);
+      
+        const navigationButtons = [
+          [
+            Markup.button.callback('Previous', 'prev_page'),
+            Markup.button.callback('Next', 'next_page'),
+          ],
+        ];
+      
+        return Markup.inlineKeyboard([...buttons, ...navigationButtons], {
+          columns: 2,
+        });
+      };
+      // Send the first page of categories
+      ctx.reply('Select a category:', inlineCategoryKeyboard());
+
+
+
+      // Handle button callbacks for category selection
+      bot.action(/category_(.+)_([^ ]+)/, async (ctx) => {
+        const categoryId = ctx.match[1];
+        const categoryName = ctx.match[2];
+        console.log(ctx.match)
+        try {
+          // Convert categoryId to a valid ObjectId
+          const categoryObjectId = new mongoose.Types.ObjectId(categoryId);
+          console.log(categoryObjectId)
+
+          // Fetch items for the selected category from MongoDB
+          const categoryItems = await MenuItem.find({ category: categoryObjectId });
+
+          if (categoryItems.length > 0) {
+            const itemsKeyboard = Markup.inlineKeyboard(
+              categoryItems.map((item) =>
+                Markup.button.callback(
+                  `${item.itemName}: #${item.price}`,
+                  `menu_item_${item._id}`
+                )
+              )
+            );
+
+            // Send the items for the selected category
+            ctx.reply(`${categoryName} category:`, itemsKeyboard);
+          } else {
+            ctx.reply('No items found for the selected category.');
+          }
+        } catch (error) {
+          console.error('Error fetching category items:', error);
+          ctx.reply(
+            'There was an error processing your request. Please try again.'
+          );
+        }
+      });
+
+      // Handle button callbacks for category navigation
+      bot.action('prev_page', (ctx) => {
+        // Show the previous page of categories
+        if (currentPage > 0) {
+          currentPage--;
+          ctx.editMessageText('Select a category:', inlineCategoryKeyboard());
+        }
+      });
+
+      bot.action('next_page', (ctx) => {
+        // Show the next page of categories
+        if (currentPage < categoryPages.length - 1) {
+          currentPage++;
+          ctx.editMessageText('Select a category:', inlineCategoryKeyboard());
+        }
+      });
+    } else {
+      ctx.reply('No categories found.');
+    }
+  } catch (error) {
+    console.error('Error fetching categories:', error);
+    ctx.reply('There was an error processing your request. Please try again.');
+  }
+});
 
 // Handling "browsing menu" action
 bot.action('browsing_menu', async (ctx) => {
@@ -162,33 +191,31 @@ bot.action('browsing_menu', async (ctx) => {
           const selectedItem = await MenuItem.findById(itemId);
 
           if (selectedItem) {
-            const user = ctx.from.id;
-      const quantity = 1; // Automatically set quantity to 1
+             const user = ctx.from.id;
 
-      // Update user's temporary cart
-      updateUserCart(user, itemId, quantity);
-      
+            // Check if the item is already in the temporary cart
+            const userCart = userCarts.get(user) || {};
+            const quantity = userCart[itemId] || 0;
+
+            // Increase the quantity in the temporary cart
+            updateUserCart(user, itemId, 1);
+
             // Create an inline keyboard for the selected menu item
             const itemKeyboard = Markup.inlineKeyboard([
-              [
-                Markup.button.callback(
-                  `Increase Amount`,
-                  `increase_amount_${itemId}`
-                ),
-                Markup.button.callback(
-                  `Decrease Amount`,
-                  `decrease_amount_${itemId}`
-                ),
-              ],
-              [Markup.button.callback(`Add to Cart`, `add_to_cart_${itemId}`)],
+                [
+                    Markup.button.callback(`+1`, `increase_amount_${itemId}`),
+                    Markup.button.callback(`-1`, `decrease_amount_${itemId}`),
+                ],
+                [Markup.button.callback(`Add to Cart`, `add_to_cart_${itemId}`)],
+                [Markup.button.callback(`View Cart`, `manage_cart`)],
             ]);
 
             // Send a message with the selected menu item and the new inline keyboard
             ctx.reply(
-              `${selectedItem.itemName}: $${selectedItem.price}  -- Quantity: ${quantity}`,
-              itemKeyboard
+                `${selectedItem.itemName}: $${selectedItem.price}  -- Quantity: ${quantity + 1}`,
+                itemKeyboard
             );
-          } else {
+        }else {
             ctx.reply('Sorry, the selected menu item was not found.');
           }
         } catch (error) {
@@ -239,19 +266,17 @@ bot.action('browsing_menu', async (ctx) => {
         ctx.answerCbQuery(`Added item to cart: ${itemId}.`);
       });
 
-
       // Function to move items from temporary cart to the actual cart
       function moveItemsToCart(userId) {
         const userCart = userCarts.get(userId) || {};
         const existingCart = existingCarts.get(userId) || {};
-      
+
         Object.keys(userCart).forEach((itemId) => {
           const quantity = userCart[itemId];
           existingCart[itemId] = (existingCart[itemId] || 0) + quantity;
         });
         // Update the existingCart in the map
-  existingCarts.set(userId, existingCart);
-
+        existingCarts.set(userId, existingCart);
 
         // Clear the temporary cart
         userCarts.delete(userId);
@@ -305,6 +330,8 @@ bot.action('browsing_menu', async (ctx) => {
           } else {
             ctx.reply('Some items in your cart could not be found.');
           }
+
+          
         } else {
           ctx.reply('Your cart is empty.');
         }

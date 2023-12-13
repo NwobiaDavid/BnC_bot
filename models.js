@@ -13,11 +13,21 @@ const User = mongoose.model('User', userSchema);
 
 // Menu Item Model
 const menuItemSchema = new mongoose.Schema({
+  category: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', required: true},
   itemName: { type: String, required: true },
   price: { type: Number, required: true },
+  quantity: {type: Number, required: true}
 });
 
 const MenuItem = mongoose.model('MenuItem', menuItemSchema);
+
+// Category Model
+const categorySchema = new mongoose.Schema({
+  category: { type: String, required: true },
+  items: [{ type: mongoose.Schema.Types.ObjectId, ref: 'MenuItem' }],
+})
+
+const Category = mongoose.model('Category', categorySchema);
 
 // Order Model
 const orderSchema = new mongoose.Schema({
@@ -29,4 +39,4 @@ const orderSchema = new mongoose.Schema({
 
 const Order = mongoose.model('Order', orderSchema);
 
-module.exports = { User, MenuItem, Order };
+module.exports = { User, MenuItem, Order, Category};
