@@ -1,13 +1,51 @@
 product_id,category,Item,price,quantity
 1,Beverages,Bottled Water,1.50,100
 2,Beverages,Cola,2.00,50
-3,Clothing & Footwear,T-Shirt,15.99,30
-4,Clothing & Footwear,Running Shoes,49.99,20
-5,Groceries,Rice,5.99,80
-6,Groceries,Apples,1.99,50
-7,Accessories,Necklace,29.99,15
-8,Accessories,Backpack,39.99,25
-9,Cleaning,Dish Soap,3.49,40
-10,Cleaning,Broom,9.99,15
-11,Deodorants,Deodorant Stick,4.99,30
-12,Deodorants,Spray Deodorant,5.99,25
+3,Beverages,Orange Juice,2.49,30
+4,Beverages,Coffee,3.99,40
+5,Beverages,Energy Drink,2.99,25
+6,Clothing & Footwear,T-Shirt,15.99,30
+7,Clothing & Footwear,Running Shoes,49.99,20
+8,Clothing & Footwear,Jeans,29.99,25
+9,Clothing & Footwear,Sweater,24.99,15
+10,Clothing & Footwear,Sneakers,19.99,30
+11,Groceries,Rice,5.99,80
+12,Groceries,Apples,1.99,50
+13,Groceries,Bread,2.49,40
+14,Groceries,Milk,3.29,35
+15,Groceries,Eggs,1.99,60
+16,Accessories,Necklace,29.99,15
+17,Accessories,Backpack,39.99,25
+18,Accessories,Sunglasses,14.99,20
+19,Accessories,Watch,19.99,30
+20,Accessories,Hat,9.99,40
+21,Cleaning,Dish Soap,3.49,40
+22,Cleaning,Broom,9.99,15
+23,Cleaning,All-Purpose Cleaner,4.99,25
+24,Cleaning,Paper Towels,2.99,50
+25,Cleaning,Laundry Detergent,5.99,20
+26,Deodorants,Deodorant Stick,4.99,30
+27,Deodorants,Spray Deodorant,5.99,25
+28,Deodorants,Roll-On Deodorant,3.99,35
+29,Deodorants,Powder Deodorant,4.49,30
+30,Deodorants,Deodorant Wipes,6.99,20
+31,Beverages,Tea,1.99,45
+32,Clothing & Footwear,Dress,39.99,15
+33,Groceries,Cereal,3.49,30
+34,Accessories,Wallet,24.99,25
+35,Cleaning,Glass Cleaner,2.99,40
+36,Deodorants,Deodorant Cream,5.49,25
+37,Beverages,Smoothie,3.99,20
+38,Clothing & Footwear,Boots,44.99,18
+39,Groceries,Chicken,7.99,15
+40,Accessories,Bracelet,19.99,20
+41,Cleaning,Sponges,1.99,50
+42,Deodorants,Deodorant Powder,4.29,30
+43,Beverages,Hot Chocolate,2.99,25
+44,Clothing & Footwear,Hoodie,22.99,22
+45,Groceries,Pasta,1.79,40
+46,Accessories,Scarf,12.99,18
+47,Cleaning,Air Freshener,3.49,28
+48,Deodorants,Deodorant Gel,6.49,22
+49,Beverages,Lemonade,2.49,30
+50,Clothing & Footwear,Socks,5.99,35

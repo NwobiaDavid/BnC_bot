@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const { User, MenuItem , Vendor} = require('../models');
+const { User, MenuItem } = require('../models');
 
 
 
