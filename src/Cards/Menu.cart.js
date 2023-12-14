@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 const { Markup } = require('telegraf');
 const { MenuItem } = require('../../models');
 
-async function manageCart(ctx, existingCarts) {
+async function manageCart(ctx,bot, existingCarts, userCarts) {
         const userId = ctx.from.id;
         const existingCart = existingCarts.get(userId) || {};
     
@@ -25,7 +25,8 @@ async function manageCart(ctx, existingCarts) {
               .join('\n');
     
             const keyboard = Markup.inlineKeyboard([
-              [Markup.button.callback('Checkout', 'checkout')],
+              [Markup.button.callback('edit cart', 'edit_cart'), Markup.button.callback('Checkout', 'checkout')],
+              [Markup.button.callback('back to home', 'browsing_categories')],
             ]);
     
             ctx.editMessageText(`Your Cart:\n${cartMessage}`, keyboard);
@@ -33,10 +34,135 @@ async function manageCart(ctx, existingCarts) {
             ctx.reply('Some items in your cart could not be found.');
           }
     
+          bot.action('edit_cart', async (ctx) => {
+            // Call the editCart function to handle the 'edit_cart' callback
+            await editCart(ctx, userCarts, existingCarts,bot);
+          });
           
         } else {
           ctx.reply('Your cart is empty.');
         }
 }
+
+async function editCart(ctx, userCarts, existingCarts, bot) {
+    try {
+        const userId = ctx.from.id;
+        const userCart = userCarts.get(userId) || {};
+        const existingCart = existingCarts.get(userId) || {};
+
+        const itemsInCart = [];
+
+        // Iterate over items in the existing cart
+        for (const itemId in existingCart) {
+            const quantityInExistingCart = existingCart[itemId];
+            const quantityInUserCart = userCart[itemId] || 0;
+
+            const itemDetails = await MenuItem.findById(itemId);
+            if (itemDetails) {
+                itemsInCart.push({
+                    id: itemId,
+                    name: itemDetails.itemName,
+                    existingQuantity: quantityInExistingCart,
+                    userQuantity: quantityInUserCart,
+                });
+            }
+        }
+
+        if (itemsInCart.length > 0) {
+            // Construct a message with buttons for editing each item in the cart
+            
+
+            // Register button callbacks for each item in the cart
+            itemsInCart.forEach((item) => {
+                const cartEditMessage = `editing: ${item.name}: ${item.existingQuantity}`;
+    
+                const keyboard = Markup.inlineKeyboard([
+                    [Markup.button.callback('Increase Quantity', 'increase_quantity'), Markup.button.callback('Decrease Quantity', 'decrease_quantity')],
+                    [Markup.button.callback('Remove Item', 'remove_item')],
+                    [Markup.button.callback('Back to Cart', 'manage_cart')],
+                ]);
+    
+                ctx.editMessageText(`Edit Cart:\n${cartEditMessage}`, keyboard);
+                
+                registerItemCallbacks(ctx, userCarts, existingCarts, item, bot);
+            });
+        } else {
+            ctx.reply('Your cart is empty.');
+        }
+    } catch (error) {
+        console.error('Error editing cart:', error);
+        ctx.reply('There was an error editing your cart. Please try again.');
+    }
+}
+
+async function registerItemCallbacks(ctx, userCarts, existingCarts, item, bot) {
+    const { id, existingQuantity, userQuantity } = item;
+
+    bot.action(`increase_quantity_${id}`, async (ctx) => {
+        await updateCartItemQuantity(ctx, userCarts, existingCarts, id, 1);
+    });
+
+    bot.action(`decrease_quantity_${id}`, async (ctx) => {
+        await updateCartItemQuantity(ctx, userCarts, existingCarts, id, -1);
+    });
+
+    bot.action(`remove_item_${id}`, async (ctx) => {
+        await removeCartItem(ctx, userCarts, existingCarts, id);
+    });
+}
+
+async function updateCartItemQuantity(ctx, userCarts, existingCarts, itemId, quantityChange) {
+    try {
+        const userId = ctx.from.id;
+        const userCart = userCarts.get(userId) || {};
+        const existingCart = existingCarts.get(userId) || {};
+
+        const currentQuantityInUserCart = userCart[itemId] || 0;
+        const currentQuantityInExistingCart = existingCart[itemId] || 0;
+
+        const newQuantityInUserCart = Math.max(0, currentQuantityInUserCart + quantityChange);
+        const newQuantityInExistingCart = Math.max(0, currentQuantityInExistingCart + quantityChange);
+
+        // Update the user cart
+        userCart[itemId] = newQuantityInUserCart;
+        userCarts.set(userId, userCart);
+
+        // Update the existing cart
+        existingCart[itemId] = newQuantityInExistingCart;
+        existingCarts.set(userId, existingCart);
+
+        // Refresh the cart edit message
+        await editCart(ctx, userCarts, existingCarts);
+    } catch (error) {
+        console.error('Error updating cart item quantity:', error);
+        ctx.reply('There was an error updating the cart item quantity. Please try again.');
+    }
+}
+
+async function removeCartItem(ctx, userCarts, existingCarts, itemId) {
+    try {
+        const userId = ctx.from.id;
+        const userCart = userCarts.get(userId) || {};
+        const existingCart = existingCarts.get(userId) || {};
+
+        // Remove the item from both user and existing carts
+        delete userCart[itemId];
+        delete existingCart[itemId];
+
+        // Update the user cart
+        userCarts.set(userId, userCart);
+
+        // Update the existing cart
+        existingCarts.set(userId, existingCart);
+
+        // Refresh the cart edit message
+        await editCart(ctx, userCarts, existingCarts);
+    } catch (error) {
+        console.error('Error removing cart item:', error);
+        ctx.reply('There was an error removing the cart item. Please try again.');
+    }
+}
+
+
 
 module.exports = { manageCart }
