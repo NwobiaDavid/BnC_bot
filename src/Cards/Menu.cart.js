@@ -1,8 +1,10 @@
 const mongoose = require('mongoose');
-const { Markup } = require('telegraf');
+const {Telegraf, Markup } = require('telegraf');
 const { MenuItem } = require('../../models');
 
-async function manageCart(ctx,bot, existingCarts, userCarts) {
+let botx;
+async function manageCart(ctx, bot, existingCarts, userCarts) {
+    botx = bot;
         const userId = ctx.from.id;
         const existingCart = existingCarts.get(userId) || {};
     
@@ -73,45 +75,66 @@ async function editCart(ctx, userCarts, existingCarts, bot) {
             
 
             // Register button callbacks for each item in the cart
-            itemsInCart.forEach((item) => {
+            itemsInCart.map((item) => {
                 const cartEditMessage = `editing: ${item.name}: ${item.existingQuantity}`;
-    
+                // console.log(item.id)
                 const keyboard = Markup.inlineKeyboard([
-                    [Markup.button.callback('Increase Quantity', 'increase_quantity'), Markup.button.callback('Decrease Quantity', 'decrease_quantity')],
-                    [Markup.button.callback('Remove Item', 'remove_item')],
+                    [Markup.button.callback('Increase Quantity', `increase_quantity_${item.id}`), Markup.button.callback('Decrease Quantity', `decrease_quantity_${item.id}`)],
+                    [Markup.button.callback('Remove Item', `remove_item_${item.id}`)],
                     [Markup.button.callback('Back to Cart', 'manage_cart')],
                 ]);
     
                 ctx.editMessageText(`Edit Cart:\n${cartEditMessage}`, keyboard);
                 
-                registerItemCallbacks(ctx, userCarts, existingCarts, item, bot);
+                // registerItemCallbacks(ctx, userCarts, existingCarts, item, bot);
             });
         } else {
             ctx.reply('Your cart is empty.');
         }
+
+        
+console.log("this is botx==>", botx);
+        botx.action(/increase_quantity_(.+)/, (ctx) => {
+            // quantity = await updateUserCart(user, itemId, -1, userCarts, ctx);
+            const itemId = ctx.match[1];
+            updateCartItemQuantity(ctx,userCarts, existingCarts, itemId, 1);
+        });
+    
+        botx.action(/decrease_quantity_(.+)/, (ctx) => {
+            const itemId = ctx.match[1];
+            updateCartItemQuantity(ctx, userCarts, existingCarts, itemId, -1);
+        });
+    
+        botx.action(/remove_item_(.+)/, (ctx) => {
+            removeCartItem(ctx, userCarts, existingCarts, id);
+        });
+
     } catch (error) {
         console.error('Error editing cart:', error);
         ctx.reply('There was an error editing your cart. Please try again.');
     }
 }
 
-async function registerItemCallbacks(ctx, userCarts, existingCarts, item, bot) {
-    const { id, existingQuantity, userQuantity } = item;
+// async function registerItemCallbacks(ctx, userCarts, existingCarts, item, bot) {
+//     // const { id, existingQuantity, userQuantity } = item;
+//     console.log("this is the bot====>", bot)
+//     bot.action(/increase_quantity_(.+)/, async (ctx) => {
+//         // quantity = await updateUserCart(user, itemId, -1, userCarts, ctx);
+//         const itemId = ctx.match[1];
+//         await updateCartItemQuantity(ctx,userCarts, existingCarts, itemId, 1);
+//     });
 
-    bot.action(`increase_quantity_${id}`, async (ctx) => {
-        await updateCartItemQuantity(ctx, userCarts, existingCarts, id, 1);
-    });
+//     bot.action(/decrease_quantity_(.+)/, async (ctx) => {
+//         const itemId = ctx.match[1];
+//         await updateCartItemQuantity(ctx, userCarts, existingCarts, itemId, -1);
+//     });
 
-    bot.action(`decrease_quantity_${id}`, async (ctx) => {
-        await updateCartItemQuantity(ctx, userCarts, existingCarts, id, -1);
-    });
+//     bot.action(/remove_item_(.+)/, async (ctx) => {
+//         await removeCartItem(ctx, userCarts, existingCarts, id);
+//     });
+// }
 
-    bot.action(`remove_item_${id}`, async (ctx) => {
-        await removeCartItem(ctx, userCarts, existingCarts, id);
-    });
-}
-
-async function updateCartItemQuantity(ctx, userCarts, existingCarts, itemId, quantityChange) {
+async function updateCartItemQuantity(ctx,userCarts, existingCarts, itemId, quantityChange) {
     try {
         const userId = ctx.from.id;
         const userCart = userCarts.get(userId) || {};
@@ -123,14 +146,14 @@ async function updateCartItemQuantity(ctx, userCarts, existingCarts, itemId, qua
         const newQuantityInUserCart = Math.max(0, currentQuantityInUserCart + quantityChange);
         const newQuantityInExistingCart = Math.max(0, currentQuantityInExistingCart + quantityChange);
 
-        // Update the user cart
+        // Update the existing cart
         userCart[itemId] = newQuantityInUserCart;
         userCarts.set(userId, userCart);
 
         // Update the existing cart
         existingCart[itemId] = newQuantityInExistingCart;
         existingCarts.set(userId, existingCart);
-
+        
         // Refresh the cart edit message
         await editCart(ctx, userCarts, existingCarts);
     } catch (error) {

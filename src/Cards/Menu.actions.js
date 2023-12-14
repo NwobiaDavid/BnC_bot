@@ -89,7 +89,7 @@ function registerButtonCallbacks(bot, itemId, userCarts, updateUserCart, selecte
   });
 
   bot.action('manage_cart', async (ctx) => {
-    manageCart(ctx,bot, existingCarts, userCarts)
+    manageCart(ctx, bot, existingCarts, userCarts)
   });
 }
 
