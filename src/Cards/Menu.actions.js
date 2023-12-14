@@ -99,18 +99,22 @@ function categoryAgent(categoryId, categoryName){
 }
 
 function updateInlineKeyboard(itemId, quantity, selectedItem, ctx) {
-  const keyboard = Markup.inlineKeyboard([
-    [Markup.button.callback(`+1`, `increase_amount_${itemId}`),
-     Markup.button.callback(`-1`, `decrease_amount_${itemId}`)],
-    [Markup.button.callback(`Add to Cart`, `add_to_cart_${itemId}`)],
-  ]);
-
-  if (quantity === 0) {
-    keyboard.splice(0, 1); // Remove the "-1" button
+    let keyboard = Markup.inlineKeyboard([
+      [Markup.button.callback(`+1`, `increase_amount_${itemId}`),
+       Markup.button.callback(`-1`, `decrease_amount_${itemId}`)],
+      [Markup.button.callback(`Add to Cart`, `add_to_cart_${itemId}`)],
+    ]);
+  
+    if (quantity === 0) {
+      // Use map and filter to remove the "-1" button if quantity is 0
+      keyboard.reply_markup.inline_keyboard = keyboard.reply_markup.inline_keyboard.map(row =>
+        row.filter(btn => btn.callback_data !== `decrease_amount_${itemId}`)
+      ).filter(row => row.length > 0);
+    }
+  
+    ctx.editMessageText(`${selectedItem.itemName}: $${selectedItem.price}  -- Quantity: ${quantity}`, keyboard);
   }
-
-  ctx.editMessageText(`${selectedItem.itemName}: $${selectedItem.price}  -- Quantity: ${quantity}`, keyboard);
-}
+  
 
 // Function to move items from temporary cart to the actual cart
 function moveItemsToCart(userId, userCarts, existingCarts) {
