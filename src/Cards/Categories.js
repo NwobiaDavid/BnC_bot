@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 const { User, MenuItem, Category } = require('../../models');
 const { Telegraf, Markup } = require('telegraf');
 const { browse_menu } = require('./Menu');
-const { handleMenuItemAction } = require('./Menu.actions');
+const { handleMenuItemAction, categoryAgent } = require('./Menu.actions');
 
 async function browse_categories(ctx, bot) {
   let currentPage = 0; // Move this declaration outside
@@ -48,6 +48,8 @@ async function browse_categories(ctx, bot) {
       bot.action(/category_(.+)_([^ ]+)/, async (ctx) => {
         const categoryId = ctx.match[1];
         const categoryName = ctx.match[2];
+
+        categoryAgent(categoryId, categoryName);
 
         try {
           const categoryObjectId = new mongoose.Types.ObjectId(categoryId);

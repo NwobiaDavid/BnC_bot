@@ -2,9 +2,10 @@
 const mongoose = require('mongoose');
 const { Markup } = require('telegraf');
 const { MenuItem } = require('../../models');
+const { manageCart } = require('./Menu.cart')
 
 // Function to update user's temporary cart
-async function updateUserCart(userId, itemId, quantityChange, userCarts, ctx) {
+async function updateUserCart(userId, itemId, quantityChange, userCarts, ctx, inlineKeyboard) {
   const userCart = userCarts.get(userId) || {};
   const currentQuantity = userCart[itemId] || 1;
 
@@ -34,6 +35,9 @@ async function updateUserCart(userId, itemId, quantityChange, userCarts, ctx) {
   }
 }
 
+let id;
+let name;
+
 // Register button callbacks
 function registerButtonCallbacks(bot, itemId, userCarts, updateUserCart, selectedItem, quantity, ctx, user, existingCarts) {
   bot.action(`increase_amount_${itemId}`, async (ctx) => {
@@ -54,18 +58,44 @@ function registerButtonCallbacks(bot, itemId, userCarts, updateUserCart, selecte
     }
   });
 
-  bot.action(/add_to_cart_(.+)/, (ctx) => {
+  bot.action(/add_to_cart_(.+)/, async(ctx) => {
     const itemId = ctx.match[1];
     const userId = ctx.from.id;
-
-    // Move items from temporary cart to the actual cart
-    moveItemsToCart(userId, userCarts, existingCarts);
-
+  
+    const userCart = userCarts.get(userId) || {};
+    
+    // Check if the item is already in the cart
+    if (userCart[itemId]) {
+      ctx.answerCbQuery(`Item ${itemId} is already in the cart.`);
+    } else {
+         const selectedItem = await MenuItem.findById(itemId);
+        const availableQuantity = selectedItem.quantity; 
+        const newQuantity = Math.min(availableQuantity, Math.max(0, 1));
+      userCart[itemId] = newQuantity;
+      userCarts.set(userId, userCart);
+    }
+      // Move items from temporary cart to the actual cart
+      moveItemsToCart(userId, userCarts, existingCarts);
+        
+      const menu_keyboard = Markup.inlineKeyboard([
+        [Markup.button.callback('view cart', 'manage_cart')],
+        [Markup.button.callback('back', `category_${id}_${name}`)],
+        [Markup.button.callback('return to home', 'browsing_categories')],
+      ])
     // Respond to the user
     ctx.answerCbQuery(`Added item to cart: ${itemId}.`);
+    ctx.editMessageText('what would you like to do next',menu_keyboard )
+    
   });
 
-  // Handle other button callbacks...
+  bot.action('manage_cart', async (ctx) => {
+    manageCart(ctx, existingCarts)
+  });
+}
+
+function categoryAgent(categoryId, categoryName){
+ id = categoryId;
+ name = categoryName;
 }
 
 function updateInlineKeyboard(itemId, quantity, selectedItem, ctx) {
@@ -73,7 +103,6 @@ function updateInlineKeyboard(itemId, quantity, selectedItem, ctx) {
     [Markup.button.callback(`+1`, `increase_amount_${itemId}`),
      Markup.button.callback(`-1`, `decrease_amount_${itemId}`)],
     [Markup.button.callback(`Add to Cart`, `add_to_cart_${itemId}`)],
-    [Markup.button.callback(`View Cart`, `manage_cart`)],
   ]);
 
   if (quantity === 0) {
@@ -117,10 +146,9 @@ async function handleMenuItemAction(existingCarts, userCarts, ctx, itemId, user,
       const initialKeyboard = Markup.inlineKeyboard([
         [Markup.button.callback(`+1`, `increase_amount_${itemId}`)],
         [Markup.button.callback(`Add to Cart`, `add_to_cart_${itemId}`)],
-        [Markup.button.callback(`View Cart`, `manage_cart`)],
       ]);
 
-      const message = await ctx.reply(
+      const message = await ctx.editMessageText(
         `${selectedItem.itemName}: $${selectedItem.price}  -- Quantity: ${quantity}`,
         initialKeyboard
       );
@@ -136,4 +164,4 @@ async function handleMenuItemAction(existingCarts, userCarts, ctx, itemId, user,
   }
 }
 
-module.exports = { handleMenuItemAction, updateUserCart };
+module.exports = { handleMenuItemAction, updateUserCart , categoryAgent};
