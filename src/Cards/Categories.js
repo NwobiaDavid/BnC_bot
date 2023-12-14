@@ -120,7 +120,7 @@ async function browse_categories(ctx, bot) {
       bot.action(/menu_item_(.+)/, async (ctx) => {
         const itemId = ctx.match[1];
         const user = ctx.from.id;
-        handleMenuItemAction(existingCarts,userCarts, ctx, itemId, user )
+        handleMenuItemAction(existingCarts,userCarts, ctx, itemId, user, bot )
        });
 
       bot.action('prev_page', (ctx) => {
