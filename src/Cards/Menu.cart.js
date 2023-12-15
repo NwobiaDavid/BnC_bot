@@ -176,9 +176,9 @@ async function updateCartItemQuantity(ctx, userCarts, existingCarts, itemId, qua
         const currentQuantityInUserCart = userCart[itemId] || 0;
         const currentQuantityInExistingCart = existingCart[itemId] || 0;
 
-        const newQuantityInUserCart = Math.max(0, currentQuantityInUserCart + quantityChange);
+        const newQuantityInUserCart = Math.max(0, currentQuantityInUserCart - currentQuantityInExistingCart + quantityChange);
         const newQuantityInExistingCart = Math.max(0, currentQuantityInExistingCart + quantityChange);
-
+        
         // Update the existing cart
         userCart[itemId] = newQuantityInUserCart;
         userCarts.set(userId, userCart);
