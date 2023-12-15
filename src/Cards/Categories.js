@@ -43,7 +43,7 @@ async function browse_categories(ctx, bot) {
         });
       };
 
-      ctx.reply('Select a category:', inlineCategoryKeyboard());
+      ctx.editMessageText('Select a category:', inlineCategoryKeyboard());
 
       bot.action(/category_(.+)_([^ ]+)/, async (ctx) => {
         const categoryId = ctx.match[1];
@@ -109,7 +109,7 @@ async function browse_categories(ctx, bot) {
           }
         } catch (error) {
           console.error('Error fetching category items:', error);
-          ctx.reply('There was an error processing your request. Please try again.');
+          ctx.editMessageText('There was an error processing your request. Please try again.');
         }
       });
 
