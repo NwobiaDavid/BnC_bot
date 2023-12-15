@@ -8,7 +8,7 @@ const { loadMenuData } = require('./src/Init');
 const { handleUserDetails } = require('./src/User');
 
 const { Types } = require('mongoose');
-const { browse_categories } = require('./src/Cards/Categories');
+const { browse_categories, callbackk } = require('./src/Cards/Categories');
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
 mongoose.connect(process.env.MONGO_URI);
@@ -43,7 +43,8 @@ function displayMainMenu(ctx, text) {
 
 // Handling vendor button clicks
 bot.action('browsing_categories', async (ctx) => {
-      browse_categories(ctx, bot);
+      browse_categories(ctx, bot, displayMainMenu);
+      // callbackk(ctx, bot, displayMainMenu);
 });
 
 

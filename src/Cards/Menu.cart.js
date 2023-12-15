@@ -99,10 +99,19 @@ async function editCart(ctx, userCarts, existingCarts, bot) {
                     [Markup.button.callback('Remove Item', `remove_item_${currentCartItem.id}`)],
                     // [Markup.button.callback('Remove All Items', 'remove_all_items')],
                     [Markup.button.callback('Back to Cart', 'back_to_cart')],
-                    // Show 'Previous' button only if there are items before the current one
-                    ...(currentItemIndex > 0 ? [[Markup.button.callback('Previous', 'previous_item')]] : []),
-                    // Show 'Next' button only if there are items after the current one
-                    ...(currentItemIndex < itemsInCart.length - 1 ? [[Markup.button.callback('Next', 'next_item')]] : []),
+                    // Show 'Previous' and 'Next' buttons on the same line
+        ...(currentItemIndex > 0 || currentItemIndex < itemsInCart.length - 1
+            ? [
+                  [
+                      ...(currentItemIndex > 0
+                          ? [Markup.button.callback('Previous', 'previous_item')]
+                          : []),
+                      ...(currentItemIndex < itemsInCart.length - 1
+                          ? [Markup.button.callback('Next', 'next_item')]
+                          : []),
+                  ],
+              ]
+            : []),
                     [Markup.button.callback('Back to home', 'browsing_categories')],
                 ]);
 
@@ -178,7 +187,7 @@ async function updateCartItemQuantity(ctx, userCarts, existingCarts, itemId, qua
 
         const newQuantityInUserCart = Math.max(0, currentQuantityInUserCart - currentQuantityInExistingCart + quantityChange);
         const newQuantityInExistingCart = Math.max(0, currentQuantityInExistingCart + quantityChange);
-        
+
         // Update the existing cart
         userCart[itemId] = newQuantityInUserCart;
         userCarts.set(userId, userCart);

@@ -4,7 +4,9 @@ const { Telegraf, Markup } = require('telegraf');
 const { browse_menu } = require('./Menu');
 const { handleMenuItemAction, categoryAgent } = require('./Menu.actions');
 
-async function browse_categories(ctx, bot) {
+let text='Main Menu!';
+
+async function browse_categories(ctx, bot, displayMainMenu) {
   let currentPage = 0; // Move this declaration outside
 
   try {
@@ -38,13 +40,38 @@ async function browse_categories(ctx, bot) {
           ]);
         }
 
-        return Markup.inlineKeyboard([...buttons, ...navigationButtons], {
+        const mainMenu = [
+          Markup.button.callback('Back to MainMenu!', 'browse_mainmenu'),
+        ]
+
+        return Markup.inlineKeyboard([...buttons, ...navigationButtons, mainMenu], {
           columns: 1,
         });
       };
 
       ctx.editMessageText('Select a category:', inlineCategoryKeyboard());
 
+      bot.action('browse_mainmenu', (ctx) => {
+       
+        ctx.editMessageText(text, {
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: 'start shopping', callback_data: 'browsing_categories' }],
+              [{ text: 'Customer Support', callback_data: 'customer_support' }],
+              [{ text: 'Manage Cart', callback_data: 'manage_cart' }],
+              [
+                {
+                  text: 'Change Delivery Location/Room Number',
+                  callback_data: 'change_delivery_location',
+                },
+              ],
+            ],
+          },
+        });
+
+      });
+
+      // Define bot actions for category selection
       bot.action(/category_(.+)_([^ ]+)/, async (ctx) => {
         const categoryId = ctx.match[1];
         const categoryName = ctx.match[2];
@@ -82,7 +109,12 @@ async function browse_categories(ctx, bot) {
                 navigationButtons.push([Markup.button.callback('Previous', 'prev_menu_page')]);
               }
 
-              return Markup.inlineKeyboard([...buttons, ...navigationButtons], {
+              const Menus = [
+                [Markup.button.callback('Back', `browsing_categories`),
+                Markup.button.callback('MainMenu!', 'browse_mainmenu')]
+              ]
+
+              return Markup.inlineKeyboard([...buttons, ...navigationButtons, ...Menus], {
                 columns: 1,
               });
             };
@@ -147,5 +179,8 @@ async function browse_categories(ctx, bot) {
     ctx.reply('There was an error processing your request. Please try again.');
   }
 }
+
+
+
 
 module.exports = { browse_categories };
