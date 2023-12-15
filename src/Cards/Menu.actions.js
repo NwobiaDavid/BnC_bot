@@ -150,6 +150,7 @@ async function handleMenuItemAction(existingCarts, userCarts, ctx, itemId, user,
       const initialKeyboard = Markup.inlineKeyboard([
         [Markup.button.callback(`+1`, `increase_amount_${itemId}`)],
         [Markup.button.callback(`Add to Cart`, `add_to_cart_${itemId}`)],
+        [Markup.button.callback(`back`, `category_${id}_${name}`)],
       ]);
 
       const message = await ctx.editMessageText(
