@@ -71,4 +71,37 @@ function calculateTotalAmount(orderItems) {
     return totalAmount.toFixed(2); // Ensure totalAmount is rounded to two decimal places
 }
 
-module.exports = { checkout };
+function paymentOptions(ctx, userCarts, existingCarts, bot, totalAmount){
+    ctx.editMessageText('Choose a payment option:', {
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: 'Bank Transfer', callback_data: 'bank_transfer' }],
+            [{ text: 'Pay with PayStack', callback_data: 'pay_with_payStack' }],
+          ],
+        },
+      });
+
+      callbackss(ctx, userCarts, existingCarts, bot, totalAmount);
+}
+
+function callbackss(ctx, userCarts, existingCarts, bot, totalAmount){
+    bot.action('bank_transfer',(ctx)=>{
+        ctx.editMessageText(`Pay to this account \n and send a screenshot of the receipt to this contact @iamnwobiadavid \n Total Amount: #${totalAmount} `, {
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: 'Confirm', callback_data: 'confirmation' }],
+            ],
+          },
+        });
+      } );
+
+    bot.action('confirmation', (ctx) => {
+        checkout(ctx, userCarts, existingCarts, bot)
+    })
+
+    bot.action('pay_with_payStack',(ctx) => {
+
+    })
+}
+
+module.exports = { paymentOptions};

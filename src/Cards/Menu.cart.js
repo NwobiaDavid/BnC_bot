@@ -1,12 +1,14 @@
 const mongoose = require('mongoose');
 const { Telegraf, Markup } = require('telegraf');
 const { MenuItem } = require('../../models');
-const { checkout } = require('../Payments/Checkout');
+const { paymentOptions } = require('../Payments/Checkout');
 
 var botx;
 let currentItemIndex = 0;
 let currentMessageId;
 let currentCartMessage;
+
+let totalAmount;
 
 async function manageCart(ctx, bot, existingCarts, userCarts) {
     if(botx==undefined){
@@ -36,7 +38,7 @@ async function manageCart(ctx, bot, existingCarts, userCarts) {
                 .map((item) =>`${item.name} (Qty: ${item.quantity}) - $${item.price * item.quantity}`)
                 .join('\n');
                 // console.log('item', validItemDetails)
-                const totalAmount = calculateTotalAmount(validItemDetails);
+                totalAmount = calculateTotalAmount(validItemDetails);
 
                     const keyboard = Markup.inlineKeyboard([
                         [Markup.button.callback('Edit Cart', 'edit_cart'), Markup.button.callback('Checkout', 'checkout')],
@@ -141,7 +143,8 @@ async function callbackss(ctx, userCarts, existingCarts, bot){
     });
 
     inst.action('checkout', async(ctx) => {
-        await checkout(ctx, userCarts, existingCarts, bot);
+        // console.log('totalAmount==>', totalAmount)
+        await paymentOptions(ctx, userCarts, existingCarts, bot, totalAmount);
     });
 }
 
