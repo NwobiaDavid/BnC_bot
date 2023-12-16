@@ -145,7 +145,7 @@ async function handleMenuItemAction(existingCarts, userCarts, ctx, itemId, user,
     const selectedItem = await MenuItem.findById(itemId);
 
     if (selectedItem) {
-      console.log(userCarts)
+      // console.log(userCarts)
       const userCart = userCarts.get(user) || {};
       let quantity = userCart[itemId] || 1;
 

@@ -53,7 +53,7 @@ async function describeIssueHandler(ctx, email, userIssue, supportOption, bot) {
   const messageToSend = `Customer Support Issue:\n\n${userInformation}\n\nIssue regarding #${supportOption}:\n${userIssue}`;
 
   // Send the issue details to a Telegram group or channel
-  const supportGroupChatId = process.env.CUSTOMER_SERVICE_GROUP_ID; // Replace with your group or channel ID
+  const supportGroupChatId = process.env.CUSTOMER_SERVICE_GROUP_ID; 
   if (supportGroupChatId) {
     await bot.telegram.sendMessage(supportGroupChatId, messageToSend);
     
@@ -65,25 +65,25 @@ async function describeIssueHandler(ctx, email, userIssue, supportOption, bot) {
         }
     });
 
-    bot.action('main_menu', (ctx) => {
+    // bot.action('main_menu', (ctx) => {
        
-        ctx.editMessageText("Main Menu", {
-          reply_markup: {
-            inline_keyboard: [
-              [{ text: 'Start Shopping', callback_data: 'browsing_categories' }],
-              [{ text: 'Customer Support', callback_data: 'customer_support' }],
-              [{ text: 'Manage Cart', callback_data: 'manage_cart' }],
-              [
-                {
-                  text: 'Change Delivery Location/Room Number',
-                  callback_data: 'change_delivery_location',
-                },
-              ],
-            ],
-          },
-        });
+    //     ctx.editMessageText("Main Menu", {
+    //       reply_markup: {
+    //         inline_keyboard: [
+    //           [{ text: 'Start Shopping', callback_data: 'browsing_categories' }],
+    //           [{ text: 'Customer Support', callback_data: 'customer_support' }],
+    //           [{ text: 'Manage Cart', callback_data: 'manage_cart' }],
+    //           [
+    //             {
+    //               text: 'Change Delivery Location/Room Number',
+    //               callback_data: 'change_delivery_location',
+    //             },
+    //           ],
+    //         ],
+    //       },
+    //     });
 
-      });
+    //   });
 
   } else {
     ctx.reply('Error: Support group chat ID is not configured.');

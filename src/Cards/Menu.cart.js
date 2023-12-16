@@ -1,11 +1,13 @@
 const mongoose = require('mongoose');
 const { Telegraf, Markup } = require('telegraf');
 const { MenuItem } = require('../../models');
+const { checkout } = require('../Payments/Checkout');
 
 var botx;
 let currentItemIndex = 0;
 let currentMessageId;
 let currentCartMessage;
+
 async function manageCart(ctx, bot, existingCarts, userCarts) {
     if(botx==undefined){
         botx = bot;
@@ -21,7 +23,7 @@ async function manageCart(ctx, bot, existingCarts, userCarts) {
             Object.keys(existingCart).map(async (itemId) => {
                 const item = await MenuItem.findById(itemId);
                 return item
-                    ? { name: item.itemName, quantity: existingCart[itemId] }
+                    ? { name: item.itemName, quantity: existingCart[itemId], price: item.price }
                     : null;
             })
         );
@@ -31,13 +33,10 @@ async function manageCart(ctx, bot, existingCarts, userCarts) {
 
         if (validItemDetails.length > 0) {
             const cartMessage = validItemDetails
-                .map((item) => `${item.name}: ${item.quantity}`)
+                .map((item) =>`${item.name} (Qty: ${item.quantity}) - $${item.price * item.quantity}`)
                 .join('\n');
-
-               // Check if the message ID has changed before editing
-            // if (ctx.updateType === 'callback_query' && ctx.callbackQuery.message.message_id !== currentMessageId) {
-            //     // Check if the content has changed before editing
-            //     if (cartMessage !== currentCartMessage) {
+                // console.log('item', validItemDetails)
+                const totalAmount = calculateTotalAmount(validItemDetails);
 
                     const keyboard = Markup.inlineKeyboard([
                         [Markup.button.callback('Edit Cart', 'edit_cart'), Markup.button.callback('Checkout', 'checkout')],
@@ -45,20 +44,22 @@ async function manageCart(ctx, bot, existingCarts, userCarts) {
                     ]);
 
                     // Send a new message with the updated content
-                    const editedMessage = await ctx.editMessageText(`Your Cart:\n${cartMessage}`, keyboard);
+                    const editedMessage = await ctx.editMessageText(`Your Cart:\n${cartMessage}\n\nTotal Amount: $${totalAmount}`, keyboard);
                     currentMessageId = editedMessage.message_id; // Update the current message ID
                     currentCartMessage = cartMessage; // Update the current cart message
 
                    callbackss(ctx,userCarts, existingCarts, bot);
-            //     }
-            // }
-            
         } else {
             ctx.reply('Some items in your cart could not be found.');
         }
     } else {
         ctx.reply('Your cart is empty.');
     }
+}
+
+function calculateTotalAmount(itemDetails) {
+    const totalAmount = itemDetails.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    return totalAmount.toFixed(2); // Ensure totalAmount is rounded to two decimal places
 }
 
 async function editCart(ctx, userCarts, existingCarts, bot) {
@@ -85,8 +86,8 @@ async function editCart(ctx, userCarts, existingCarts, bot) {
         }
 
         if (itemsInCart.length > 0 ) {
-            console.log("this is currentItemIndex",currentItemIndex)
-            console.log("this is itemsInCart.length",itemsInCart.length )
+            // console.log("this is currentItemIndex",currentItemIndex)
+            // console.log("this is itemsInCart.length",itemsInCart.length )
             if(currentItemIndex == itemsInCart.length) currentItemIndex--;
            if(currentItemIndex < itemsInCart.length){
 
@@ -132,16 +133,21 @@ async function editCart(ctx, userCarts, existingCarts, bot) {
 
 async function callbackss(ctx, userCarts, existingCarts, bot){
     const inst =botx
-    console.log(inst)
+    // console.log(inst)
+
     inst.action('edit_cart', async (ctx) => {
         // Call the editCart function to handle the 'edit_cart' callback
     editCart(ctx, userCarts, existingCarts, bot);
+    });
+
+    inst.action('checkout', async(ctx) => {
+        await checkout(ctx, userCarts, existingCarts, bot);
     });
 }
 
 async function registerItemCallbacks(ctx, userCarts, existingCarts, item, bot, itemsInCart) {
     const { id } = item;
-    console.log(botx)
+    // console.log(botx)
     botx.action(/increase_quantity_(.+)/, (ctx) => {
         const itemId = ctx.match[1];
         updateCartItemQuantity(ctx, userCarts, existingCarts, itemId, 1, bot);
