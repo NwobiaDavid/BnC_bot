@@ -1,5 +1,5 @@
 const { Markup } = require('telegraf');
-const { Order, User } = require('../../models');
+const { Order, User, MenuItem } = require('../../models');
 const mongoose = require('mongoose');
 
 async function checkout(ctx, userCarts, existingCarts, bot) {
@@ -9,7 +9,7 @@ async function checkout(ctx, userCarts, existingCarts, bot) {
 
         // Fetch the user document from the User collection
         const user = await User.findOne({ telegramId });
-        
+
         if (!user) {
             ctx.reply('User not found. Please make sure you are registered.');
             return;
@@ -24,10 +24,19 @@ async function checkout(ctx, userCarts, existingCarts, bot) {
 
         // Check if the cart is not empty
         if (Object.keys(existingCart).length > 0) {
+            const orderItems = await Promise.all(
+                Object.keys(existingCart).map(async (itemId) => {
+                    const item = await MenuItem.findById(itemId);
+                    return item
+                        ? { _id: item._id, quantity: existingCart[itemId], price: item.price }
+                        : null;
+                })
+            );
+
             const order = new Order({
                 user: userId,
-                items: Object.keys(existingCart).map(itemId => ({ _id: itemId, quantity: existingCart[itemId] })),
-                totalAmount: calculateTotalAmount(existingCart),
+                items: orderItems.filter((item) => item !== null), // Remove items that couldn't be found
+                totalAmount: calculateTotalAmount(orderItems),
                 status: 'Pending', // Default status
                 createdAt: new Date(),
             });
@@ -42,9 +51,9 @@ async function checkout(ctx, userCarts, existingCarts, bot) {
             // Send a confirmation message to the user
             ctx.reply('Your order has been placed! Thank you for shopping with us.', {
                 reply_markup: {
-                  inline_keyboard: [
-                    [{ text: 'Main Menu', callback_data: 'browse_mainmenu' }],
-                  ],
+                    inline_keyboard: [
+                        [{ text: 'Main Menu', callback_data: 'browse_mainmenu' }],
+                    ],
                 }
             });
         } else {
@@ -56,14 +65,10 @@ async function checkout(ctx, userCarts, existingCarts, bot) {
     }
 }
 
-function calculateTotalAmount(cart) {
-    // Assuming each item in the cart has a 'price' property
-    const itemPrices = Object.values(cart).map(item => item.price || 0);
-
-    // Sum up the item prices to calculate the total amount
-    const totalAmount = itemPrices.reduce((sum, price) => sum + price, 0);
-
-    return totalAmount;
+function calculateTotalAmount(orderItems) {
+    // Sum up the prices of items with consideration to their quantities
+    const totalAmount = orderItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    return totalAmount.toFixed(2); // Ensure totalAmount is rounded to two decimal places
 }
 
 module.exports = { checkout };
