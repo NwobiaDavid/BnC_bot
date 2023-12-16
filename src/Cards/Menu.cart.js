@@ -40,8 +40,8 @@ async function manageCart(ctx, bot, existingCarts, userCarts) {
             //     if (cartMessage !== currentCartMessage) {
 
                     const keyboard = Markup.inlineKeyboard([
-                        [Markup.button.callback('edit cart', 'edit_cart'), Markup.button.callback('Checkout', 'checkout')],
-                        [Markup.button.callback('back to home', 'browsing_categories')],
+                        [Markup.button.callback('Edit Cart', 'edit_cart'), Markup.button.callback('Checkout', 'checkout')],
+                        [Markup.button.callback('Back to Home', 'browsing_categories')],
                     ]);
 
                     // Send a new message with the updated content
@@ -112,7 +112,7 @@ async function editCart(ctx, userCarts, existingCarts, bot) {
                   ],
               ]
             : []),
-                    [Markup.button.callback('Back to home', 'browsing_categories')],
+                    [Markup.button.callback('Back to Home', 'browsing_categories')],
                 ]);
 
                 await ctx.editMessageText(`Edit Cart:\n${cartEditMessage}`, keyboard);

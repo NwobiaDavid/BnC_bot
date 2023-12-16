@@ -6,7 +6,7 @@ const { handleMenuItemAction, categoryAgent } = require('./Menu.actions');
 
 let text='Main Menu!';
 
-async function browse_categories(ctx, bot, displayMainMenu) {
+async function browse_categories(ctx, bot, displayMainMenu, existingCarts,userCarts) {
   let currentPage = 0; // Move this declaration outside
 
   try {
@@ -41,7 +41,7 @@ async function browse_categories(ctx, bot, displayMainMenu) {
         }
 
         const mainMenu = [
-          Markup.button.callback('Back to MainMenu!', 'browse_mainmenu'),
+          Markup.button.callback('Back to MainMenu', 'browse_mainmenu'),
         ]
 
         return Markup.inlineKeyboard([...buttons, ...navigationButtons, mainMenu], {
@@ -56,7 +56,7 @@ async function browse_categories(ctx, bot, displayMainMenu) {
         ctx.editMessageText(text, {
           reply_markup: {
             inline_keyboard: [
-              [{ text: 'start shopping', callback_data: 'browsing_categories' }],
+              [{ text: 'Start Shopping', callback_data: 'browsing_categories' }],
               [{ text: 'Customer Support', callback_data: 'customer_support' }],
               [{ text: 'Manage Cart', callback_data: 'manage_cart' }],
               [
@@ -111,7 +111,7 @@ async function browse_categories(ctx, bot, displayMainMenu) {
 
               const Menus = [
                 [Markup.button.callback('Back', `browsing_categories`),
-                Markup.button.callback('MainMenu!', 'browse_mainmenu')]
+                Markup.button.callback('MainMenu', 'browse_mainmenu')]
               ]
 
               return Markup.inlineKeyboard([...buttons, ...navigationButtons, ...Menus], {
@@ -147,8 +147,8 @@ async function browse_categories(ctx, bot, displayMainMenu) {
 
     
       // Map to store user carts (user_id => { item_id: quantity })
-      const existingCarts = new Map();
-      const userCarts = new Map();
+      // const existingCarts = new Map();
+      // const userCarts = new Map();
 
       
       bot.action(/menu_item_(.+)/, async (ctx) => {

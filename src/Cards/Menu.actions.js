@@ -78,19 +78,19 @@ function registerButtonCallbacks(bot, itemId, userCarts, updateUserCart, selecte
       moveItemsToCart(userId, userCarts, existingCarts);
         
       const menu_keyboard = Markup.inlineKeyboard([
-        [Markup.button.callback('view cart', 'manage_cart')],
-        [Markup.button.callback('back', `category_${id}_${name}`)],
-        [Markup.button.callback('return to home', 'browsing_categories')],
+        [Markup.button.callback('Back', `category_${id}_${name}`)],
+        [Markup.button.callback('View Cart', 'manage_cart')],
+        [Markup.button.callback('Return to Home', 'browsing_categories')],
       ])
     // Respond to the user
     ctx.answerCbQuery(`Added item to cart: ${itemId}.`);
-    ctx.editMessageText('what would you like to do next',menu_keyboard )
+    ctx.editMessageText('what would you like to do next?',menu_keyboard )
     
   });
 
-  bot.action('manage_cart', async (ctx) => {
-    manageCart(ctx, bot, existingCarts, userCarts)
-  });
+  // bot.action('manage_cart', async (ctx) => {
+  //   manageCart(ctx, bot, existingCarts, userCarts)
+  // });
 }
 
 function categoryAgent(categoryId, categoryName){
@@ -103,6 +103,7 @@ function updateInlineKeyboard(itemId, quantity, selectedItem, ctx) {
       [Markup.button.callback(`+1`, `increase_amount_${itemId}`),
        Markup.button.callback(`-1`, `decrease_amount_${itemId}`)],
       [Markup.button.callback(`Add to Cart`, `add_to_cart_${itemId}`)],
+      [Markup.button.callback(`Back`, `category_${id}_${name}`)],
     ]);
   
     if (quantity === 0) {
@@ -144,13 +145,14 @@ async function handleMenuItemAction(existingCarts, userCarts, ctx, itemId, user,
     const selectedItem = await MenuItem.findById(itemId);
 
     if (selectedItem) {
+      console.log(userCarts)
       const userCart = userCarts.get(user) || {};
       let quantity = userCart[itemId] || 1;
 
       const initialKeyboard = Markup.inlineKeyboard([
         [Markup.button.callback(`+1`, `increase_amount_${itemId}`)],
         [Markup.button.callback(`Add to Cart`, `add_to_cart_${itemId}`)],
-        [Markup.button.callback(`back`, `category_${id}_${name}`)],
+        [Markup.button.callback(`Back`, `category_${id}_${name}`)],
       ]);
 
       const message = await ctx.editMessageText(

@@ -3,7 +3,7 @@ const { User, MenuItem } = require('../models');
 
 
 
-async function handleUserDetails (ctx, bot, displayMainMenu){
+async function handleUserDetails (ctx, bot, displayMainMenu,existingCarts,userCarts){
     const existingUser = await User.findOne({ telegramId: ctx.from.id });
   
     if (!existingUser) {

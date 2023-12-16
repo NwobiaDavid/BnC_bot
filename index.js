@@ -1,24 +1,40 @@
 require('dotenv').config();
-const { Telegraf, Markup } = require('telegraf');
+const { Telegraf, Markup , session, Scenes} = require('telegraf');
 const mongoose = require('mongoose');
 const fs = require('fs');
 const csv = require('csv-parser');
 const { User, MenuItem , Category} = require('./models');
 const { loadMenuData } = require('./src/Init');
 const { handleUserDetails } = require('./src/User');
-
+// const {session} = require('telegraf/session');
 const { Types } = require('mongoose');
 const { browse_categories, callbackk } = require('./src/Cards/Categories');
+const { manageCart } = require('./src/Cards/Menu.cart');
+const { initiateCustomerSupport, collectEmail } = require('./src/Customer/CustomerSupport');
+
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
 mongoose.connect(process.env.MONGO_URI);
 console.log(`connected the the database successfully...`);
 
+bot.use(session());
+
+const existingCarts = new Map();
+const userCarts = new Map();
+
+// const preMiddleware = async (ctx, next) => {
+//   ctx.session.existingCarts = new Map();
+//   ctx.session.userCarts = new Map();
+//   next();
+// };
+
+// bot.use(preMiddleware)
+
 loadMenuData();
 
 // Start the bot
 bot.start(async (ctx) => {
- handleUserDetails(ctx, bot, displayMainMenu)
+ handleUserDetails(ctx, bot, displayMainMenu, existingCarts,userCarts)
 });
 
 // Function to display the main menu options with buttons
@@ -26,7 +42,7 @@ function displayMainMenu(ctx, text) {
   ctx.reply(text, {
     reply_markup: {
       inline_keyboard: [
-        [{ text: 'start shopping', callback_data: 'browsing_categories' }],
+        [{ text: 'Start Shopping', callback_data: 'browsing_categories' }],
         [{ text: 'Customer Support', callback_data: 'customer_support' }],
         [{ text: 'Manage Cart', callback_data: 'manage_cart' }],
         [
@@ -43,21 +59,39 @@ function displayMainMenu(ctx, text) {
 
 // Handling vendor button clicks
 bot.action('browsing_categories', async (ctx) => {
-      browse_categories(ctx, bot, displayMainMenu);
+      browse_categories(ctx, bot, displayMainMenu,existingCarts,userCarts);
       // callbackk(ctx, bot, displayMainMenu);
 });
 
-
+bot.action('manage_cart', async (ctx) => {
+  manageCart(ctx, bot, existingCarts, userCarts)
+});
 
 // Handling "customer support" action
-bot.hears('Customer Support', (ctx) => {
-  // Implement logic for customer support
-  ctx.reply('Please contact our customer support at support@example.com');
+bot.action('customer_support', (ctx) => {
+  initiateCustomerSupport(ctx, bot);
+});
+
+// Handling customer support options
+bot.action('customer_support_payments', (ctx) => {
+  collectEmail(ctx, bot, 'Payments');
+});
+
+bot.action('customer_support_delivery', (ctx) => {
+  collectEmail(ctx, bot, 'Delivery');
+});
+
+bot.action('customer_support_platform', (ctx) => {
+  collectEmail(ctx, bot, 'Platform');
+});
+
+bot.action('customer_support_others', (ctx) => {
+  collectEmail(ctx, bot, 'Others');
 });
 
 // Handling "change delivery location/room number" action
 bot.action('change_delivery_location', (ctx) => {
-  ctx.reply('Please provide your new delivery information (room number).');
+  ctx.reply('Please provide your new delivery information (Hall and Room number).');
 
   // Define the handler function separately
   async function updateDeliveryInformationHandler(ctx) {
