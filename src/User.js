@@ -9,7 +9,7 @@ async function handleUserDetails (ctx, bot, displayMainMenu,existingCarts,userCa
     if (!existingUser) {
       // If the user doesn't exist, prompt for details and create a new user
       ctx.reply(
-        'Welcome! Please provide your details (name, matric number, email, hall, and room number) IN ORDER.'
+        `Welcome! Please provide your details (name, matric number, email, hall and roomnumber) IN ORDER.\neg:john doe, 21ce202200, johndoe@gmail.com, Joseph Hall D208`
       );
   
       // Listen for the user's response to the details prompt
@@ -30,10 +30,10 @@ async function handleUserDetails (ctx, bot, displayMainMenu,existingCarts,userCa
         newUser
           .save()
           .then(() => {
-            ctx.reply(
-              'Thank you! Your details have been saved. What would you like to do today?'
-            );
-            displayMainMenu(ctx);
+            // ctx.reply(
+              
+            // );
+            displayMainMenu(ctx, 'Thank you! Your details have been saved. What would you like to do today?');
           })
           .catch((error) => {
             console.error('Error creating a new user:', error);
@@ -43,14 +43,12 @@ async function handleUserDetails (ctx, bot, displayMainMenu,existingCarts,userCa
           });
   
         // Remove the event listener to avoid capturing other text messages
-        bot.stop('text', userDetailsHandler);
+        // bot.stop('text', userDetailsHandler);
       }
   
       // Listen for the user's response to the details prompt using filter utils
-      ctx.on(
-        'text',
-        { text: 'Welcome! Please provide your details' },
-        userDetailsHandler
+      bot.on(
+        'text', userDetailsHandler
       );
     } else {
       // If the user exists, display the main menu
