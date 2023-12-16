@@ -113,6 +113,7 @@ function paymentOptions(ctx, userCarts, existingCarts, bot, totalAmount){
           inline_keyboard: [
             [{ text: 'Bank Transfer', callback_data: 'bank_transfer' }],
             [{ text: 'Pay with PayStack', callback_data: 'pay_with_payStack' }],
+            [{ text: 'Back', callback_data: 'browse_mainmenu' }],
           ],
         },
       });
@@ -136,6 +137,8 @@ function callbackss(ctx, userCarts, existingCarts, bot, totalAmount){
         checkout(ctx, userCarts, existingCarts, bot, confirmation)
     })
 
+    let transactionReference;
+    let confirmation_paystack
     bot.action('pay_with_payStack', async(ctx) => {
         try {
             // Fetch the user document from the User collection
@@ -147,69 +150,88 @@ function callbackss(ctx, userCarts, existingCarts, bot, totalAmount){
                 return;
             }
 
-            let confirmation = '#yet_to_be_confirmed';
+            confirmation_paystack = '#yet_to_be_confirmed';
 
-            // TODO:fix/update the database from dollars to naira
+            // TODO: fix/update the database from dollars to naira
             const userEmail = user.email;
-            let integerNumber = Math.ceil(totalAmount);
+            const integerAmount = Math.ceil(totalAmount * 100); // Amount in kobo
 
-           // Initiate PayStack payment with the user's email
-        const paystackResponse = await paystack.transaction.initialize({
-            email: userEmail,
-            amount: integerNumber,
-            ref: ''+Math.floor((Math.random() * 1000000000) + 1),
-        });
+            // Initiate PayStack payment with the user's email
+            const paystackResponse = await paystack.transaction.initialize({
+                email: userEmail,
+                amount: integerAmount,
+                ref: '' + Math.floor((Math.random() * 1000000000) + 1),
+            });
 
-        // Extract transaction reference from the PayStack response
-        console.log('Transaction reference:--->', paystackResponse);
-        const transactionReference = paystackResponse.data.reference; //boolean
+            // Extract transaction reference from the PayStack response
+            console.log('PayStack Response:--->', paystackResponse);
+            transactionReference = paystackResponse.data.reference;
+            const transactionUrl = paystackResponse.data.authorization_url;
 
-        ctx.editMessageText('Payment initiated. Check your email for payment instructions...');
+            if (transactionReference) {
+                // Verify the transaction
+            const verifyResponse = await paystack.transaction.verify(transactionReference);
 
-        // Now, wait for the payment to be confirmed
-            try {
-                const paymentStatus = await checkPaymentStatus(transactionReference);
+            console.log("verify response-->", verifyResponse)
+            if (verifyResponse && verifyResponse.data) {
+                // Provide a payment link for the user
+                const paymentLink = transactionUrl;
 
-                if (transactionReference) {
-
-                    confirmation = '#confirmed';
-                    ctx.editMessageText('Payment confirmed. Proceeding with order placement...');
-                    checkout(ctx, userCarts, existingCarts, bot, confirmation);
-                
-                } else {
-                    ctx.reply('Payment is pending. Please wait for confirmation.');
-                }
-            } catch (error) {
-                console.error('Error checking payment status:', error);
-                ctx.reply('There was an error checking the payment status. Please contact support.');
+                // Send the payment link to the user
+                ctx.editMessageText(
+                    `Click the link below to make payment:\n${paymentLink}`,
+                    {
+                        reply_markup: {
+                            inline_keyboard: [
+                                [
+                                    { text: 'Confirm', callback_data: 'paystack_confirmation' },
+                                    { text: 'Cancel', callback_data: 'cancel_payment' },
+                                ],
+                            ],
+                        },
+                    }
+                );
+            } else {
+                ctx.reply('Error retrieving payment information. Please try again.');
             }
-
+        } else {
+            ctx.reply('Error initiating PayStack payment. Please try again.');
+        }
         } catch (error) {
             console.error('Error initiating PayStack payment:', error);
             ctx.reply('There was an error initiating PayStack payment. Please try again.');
         }
-    })
+    });
 
-    // Function to check the payment status using the PayStack API
-    async function checkPaymentStatus(reference) {
+    bot.action('paystack_confirmation', async (ctx) => {
         try {
-            const response = await axios.get(`https://api.paystack.co/transaction/verify/${reference}`, {
-                headers: {
-                    Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
-                },
-            });
+            // const transactionReference = ctx.callbackQuery.data;
+            console.log("this is the callback => ", transactionReference)
 
-            if (!response || !response.data || !response.data.data || !response.data.data.status) {
-                throw new Error('Invalid PayStack response');
+            // Verify the transaction
+            const verifyResponse = await paystack.transaction.verify(transactionReference);
+
+            console.log("verify response 222 -->", verifyResponse);
+
+            if (verifyResponse && verifyResponse.data && verifyResponse.data.status === 'success') {
+                // Transaction was successful
+                confirmation_paystack="#confirmed"
+                // ctx.editMessageText('Payment successful! Thank you for your purchase.');
+                checkout(ctx, userCarts, existingCarts, bot, confirmation_paystack)
+            } else {
+                // Transaction was not successful
+                ctx.reply('Payment failed. Please try again or contact support.');
             }
-
-            const status = response.status;
-            return status === 'success' ? 'success' : 'pending';
         } catch (error) {
-            console.error('Error checking payment status:', error);
-            throw new Error('Error checking payment status');
+            console.error('Error verifying PayStack transaction:', error);
+            ctx.reply('There was an error verifying the PayStack transaction. Please try again or contact support.');
         }
-    }
+    });
+
+
+    bot.action('cancel_payment', (ctx) => {
+        ctx.editMessageText('Payment canceled. If you have any questions, please contact support. @iamnwobiadavid');
+    });
 }
 
 module.exports = { paymentOptions};
