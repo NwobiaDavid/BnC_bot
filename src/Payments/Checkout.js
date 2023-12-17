@@ -41,7 +41,7 @@ async function checkout(ctx, userCarts, existingCarts, bot, confirmation) {
                 user: userId,
                 items: orderItems.filter((item) => item !== null),
                 totalAmount: calculateTotalAmount(orderItems),
-                status: 'Pending', // Default status
+                status: 'Pending',
                 createdAt: new Date(),
             });
 
@@ -52,10 +52,10 @@ async function checkout(ctx, userCarts, existingCarts, bot, confirmation) {
             userCarts.set(userId, {});
             existingCarts.set(userId, {});
 
-            sendOrderDetailsToGroup(order, user, orderItems, confirmation, bot)
+            sendOrderDetailsToGroup(order, user, orderItems, confirmation, bot,userCarts, existingCarts,telegramId)
 
             // Send a confirmation message to the user
-            ctx.editMessageText('Your order has been placed! Thank you for shopping with us.', {
+            ctx.editMessageText('Your order has been placed! Thank you for shopping with us.\nPlease join our Telegram channel to get notified when we post any Updates @voom_official_channel', {
                 reply_markup: {
                     inline_keyboard: [
                         [{ text: 'Main Menu', callback_data: 'browse_mainmenu' }],
@@ -72,25 +72,32 @@ async function checkout(ctx, userCarts, existingCarts, bot, confirmation) {
     }
 }
 
-async function sendOrderDetailsToGroup(order, user, orderItems, confirmation, bot) {
+async function sendOrderDetailsToGroup(order, user, orderItems, confirmation, bot, userCarts, existingCarts,telegramId) {
     const groupId = process.env.ORDERS_GROUP_ID;
     console.log("item id-->", orderItems)
 
-    const itemDetailsPromises = orderItems.map(async item => {
-
+    const itemDetailsPromises = orderItems.map(async (item) => {
         const menuItem = await MenuItem.findById(item._id);
         console.log("menu ->", menuItem);
+
         const itemName = menuItem ? menuItem.itemName : 'Unknown Item';
         const itemPrice = menuItem ? menuItem.price : 'Unknown Item';
-        return `${itemName} : #${itemPrice} (Qty: ${item.quantity || 1 })`;
 
+        // Reduce the quantity for each item in the database
+        if (menuItem && menuItem.quantity >= item.quantity) {
+            menuItem.quantity -= item.quantity;
+            await menuItem.save();
+        } else {
+            console.error(`Error updating quantity for item: ${itemName}`);
+        }
+
+        return `${itemName} : #${itemPrice} (Qty: ${item.quantity || 1 })`;
     });
 
     const itemDetails = await Promise.all(itemDetailsPromises);
 
     const userName = user.name || 'Unknown User';
     const userRoomNumber = user.roomNumber || 'Unknown Room Number';
-    console.log("this is the user ==>", user);
 
     const orderDetailsMessage = `
         New Order:\n\nCustomer: ${userName}\nRoom Number: ${userRoomNumber}\nTotal Amount: #${order.totalAmount}\n\nItems:\n ${itemDetails.join('\n')}\n\nCreated At: ${order.createdAt}\nStatus: ${confirmation}
@@ -98,6 +105,10 @@ async function sendOrderDetailsToGroup(order, user, orderItems, confirmation, bo
 
     // Send the order details message to the group
     bot.telegram.sendMessage(groupId, orderDetailsMessage);
+
+    // Clear the user's cart
+    userCarts.set(telegramId, {});
+    existingCarts.set(telegramId, {});
 }
 
 
@@ -123,7 +134,7 @@ function paymentOptions(ctx, userCarts, existingCarts, bot, totalAmount){
 
 function callbackss(ctx, userCarts, existingCarts, bot, totalAmount){
     bot.action('bank_transfer',(ctx)=>{
-        ctx.editMessageText(`Pay to this account \n and send a screenshot of the receipt to this contact @iamnwobiadavid \n Total Amount: #${totalAmount} `, {
+        ctx.editMessageText(`Pay to this account\nAccount Number: 22113290\nBank: UBA\nAccount Name: Nwobia David Uchechi \nand send a screenshot of the receipt to this contact @iamnwobiadavid \n Total Amount: #${totalAmount} `, {
           reply_markup: {
             inline_keyboard: [
               [{ text: 'Confirm', callback_data: 'confirmation' }],
@@ -175,6 +186,7 @@ function callbackss(ctx, userCarts, existingCarts, bot, totalAmount){
             console.log("verify response-->", verifyResponse)
             if (verifyResponse && verifyResponse.data) {
                 // Provide a payment link for the user
+                
                 const paymentLink = transactionUrl;
 
                 // Send the payment link to the user
@@ -214,10 +226,22 @@ function callbackss(ctx, userCarts, existingCarts, bot, totalAmount){
             console.log("verify response 222 -->", verifyResponse);
 
             if (verifyResponse && verifyResponse.data && verifyResponse.data.status === 'success') {
-                // Transaction was successful
-                confirmation_paystack="#confirmed"
-                // ctx.editMessageText('Payment successful! Thank you for your purchase.');
-                checkout(ctx, userCarts, existingCarts, bot, confirmation_paystack)
+                const order = await Order.findOneAndUpdate(
+                    { user: user._id, status: 'Pending' },
+                    { status: 'Completed' },
+                    { new: true }
+                );
+    
+                if (order) {
+                   // Transaction was successful
+                    confirmation_paystack="#confirmed"
+                    // ctx.editMessageText('Payment successful! Thank you for your purchase.');
+                    checkout(ctx, userCarts, existingCarts, bot, confirmation_paystack)
+                } else {
+                    ctx.reply('Error updating order status. Please contact support.');
+                }
+                
+                
             } else {
                 // Transaction was not successful
                 ctx.reply('Payment failed. Please try again or contact support.');
