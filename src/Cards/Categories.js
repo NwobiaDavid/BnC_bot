@@ -40,11 +40,12 @@ async function browse_categories(ctx, bot, displayMainMenu, existingCarts,userCa
           ]);
         }
 
+        const customOrder = [Markup.button.callback('Custom Order', 'custom_order')]
         const mainMenu = [
           Markup.button.callback('Back to MainMenu', 'browse_mainmenu'),
         ]
 
-        return Markup.inlineKeyboard([...buttons, ...navigationButtons, mainMenu], {
+        return Markup.inlineKeyboard([...buttons, ...navigationButtons,customOrder, mainMenu], {
           columns: 1,
         });
       };
@@ -170,6 +171,16 @@ async function browse_categories(ctx, bot, displayMainMenu, existingCarts,userCa
           ctx.editMessageText('Select a category:', inlineCategoryKeyboard());
         }
       });
+
+      bot.action('custom_order', (ctx) => {
+        ctx.editMessageText('please message @iamnwobiadavid and give him your list',{
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: 'Main Menu', callback_data: 'browse_mainmenu' }],
+            ],
+          }
+      })
+    });
 
     } else {
       ctx.reply('No categories found.');
