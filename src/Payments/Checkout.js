@@ -6,7 +6,7 @@ const mongoose = require('mongoose');
 const axios = require('axios')
 
 
-async function checkout(ctx, userCarts, existingCarts, bot, confirmation) {
+async function checkout(ctx, userCarts, existingCarts, bot, confirmation, order_status, totalCharges) {
     try {
         const telegramId = ctx.from.id;
         console.log("the Telegram user's id-->", telegramId);
@@ -36,12 +36,13 @@ async function checkout(ctx, userCarts, existingCarts, bot, confirmation) {
                         : null;
                 })
             );
-
+                let totalAmount = calculateTotalAmount(orderItems)
             const order = new Order({
                 user: userId,
                 items: orderItems.filter((item) => item !== null),
-                totalAmount: calculateTotalAmount(orderItems),
-                status: 'Pending',
+                totalAmount: totalAmount,
+                charges: totalCharges,
+                status: order_status,
                 createdAt: new Date(),
             });
 
@@ -52,7 +53,8 @@ async function checkout(ctx, userCarts, existingCarts, bot, confirmation) {
             userCarts.set(userId, {});
             existingCarts.set(userId, {});
 
-            sendOrderDetailsToGroup(order, user, orderItems, confirmation, bot,userCarts, existingCarts,telegramId)
+            callbackss(ctx, userCarts, existingCarts, bot, totalAmount, totalCharges, userId)
+            sendOrderDetailsToGroup(order, user, orderItems, confirmation, bot,userCarts, existingCarts,telegramId, userId)
 
             // Send a confirmation message to the user
             ctx.editMessageText('Your order has been placed! Thank you for shopping with us.\nPlease join our Telegram channel to get notified when we post any Updates @voom_official_channel', {
@@ -72,7 +74,7 @@ async function checkout(ctx, userCarts, existingCarts, bot, confirmation) {
     }
 }
 
-async function sendOrderDetailsToGroup(order, user, orderItems, confirmation, bot, userCarts, existingCarts,telegramId) {
+async function sendOrderDetailsToGroup(order, user, orderItems, confirmation, bot, userCarts, existingCarts,telegramId, userId) {
     const groupId = process.env.ORDERS_GROUP_ID;
     console.log("item id-->", orderItems)
 
@@ -118,7 +120,7 @@ function calculateTotalAmount(orderItems) {
     return totalAmount.toFixed(2); // Ensure totalAmount is rounded to two decimal places
 }
 
-function paymentOptions(ctx, userCarts, existingCarts, bot, totalAmount){
+function paymentOptions(ctx, userCarts, existingCarts, bot, totalAmount, totalCharges){
     ctx.editMessageText('Choose a payment option:', {
         reply_markup: {
           inline_keyboard: [
@@ -129,15 +131,31 @@ function paymentOptions(ctx, userCarts, existingCarts, bot, totalAmount){
         },
       });
 
-      callbackss(ctx, userCarts, existingCarts, bot, totalAmount);
+      callbackss(ctx, userCarts, existingCarts, bot, totalAmount,totalCharges );
 }
 
-function callbackss(ctx, userCarts, existingCarts, bot, totalAmount){
+let order_status = 'Pending'
+
+function callbackss(ctx, userCarts, existingCarts, bot, totalAmount, totalCharges, userId){
+    bot.action('payment_option', (ctx)=>{
+        ctx.editMessageText('Choose a payment option:', {
+            reply_markup: {
+              inline_keyboard: [
+                [{ text: 'Bank Transfer', callback_data: 'bank_transfer' }],
+                [{ text: 'Pay with PayStack', callback_data: 'pay_with_payStack' }],
+                [{ text: 'Back', callback_data: 'browse_mainmenu' }],
+              ],
+            },
+          });
+    })
+    
     bot.action('bank_transfer',(ctx)=>{
-        ctx.editMessageText(`Pay to this account\nAccount Number: 22113290\nBank: UBA\nAccount Name: Nwobia David Uchechi \nand send a screenshot of the receipt to this contact @iamnwobiadavid \n Total Amount: #${totalAmount} `, {
+        let total = Number(totalAmount)+Number(totalCharges);
+        ctx.editMessageText(`Pay to this account\n\nAccount Number: 22113290\nBank: UBA\nAccount Name: Nwobia David Uchechi \n\nand send a screenshot of the receipt to this contact @iamnwobiadavid \n Total Amount: #${total}(charges included) `, {
           reply_markup: {
             inline_keyboard: [
               [{ text: 'Confirm', callback_data: 'confirmation' }],
+              [{text: 'Back', callback_data: 'payment_option'}]
             ],
           },
         });
@@ -145,7 +163,7 @@ function callbackss(ctx, userCarts, existingCarts, bot, totalAmount){
 
     bot.action('confirmation', (ctx) => {
         let confirmation = '#yet_to_be_confirmed';
-        checkout(ctx, userCarts, existingCarts, bot, confirmation)
+        checkout(ctx, userCarts, existingCarts, bot, confirmation, order_status, totalCharges)
     })
 
     let transactionReference;
@@ -165,8 +183,10 @@ function callbackss(ctx, userCarts, existingCarts, bot, totalAmount){
 
             // TODO: fix/update the database from dollars to naira
             const userEmail = user.email;
-            const integerAmount = Math.ceil(totalAmount * 100); // Amount in kobo
-
+            const integerAmount = Math.ceil((Number(totalAmount) +Number(totalCharges)))*100; // Amount in kobo
+            
+            console.log("*****integer amount*****", integerAmount);
+            console.log("total charges==>",totalCharges);
             // Initiate PayStack payment with the user's email
             const paystackResponse = await paystack.transaction.initialize({
                 email: userEmail,
@@ -199,6 +219,7 @@ function callbackss(ctx, userCarts, existingCarts, bot, totalAmount){
                                     { text: 'Confirm', callback_data: 'paystack_confirmation' },
                                     { text: 'Cancel', callback_data: 'cancel_payment' },
                                 ],
+                                [{text: 'Back', callback_data: 'payment_option'}]
                             ],
                         },
                     }
@@ -217,6 +238,11 @@ function callbackss(ctx, userCarts, existingCarts, bot, totalAmount){
 
     bot.action('paystack_confirmation', async (ctx) => {
         try {
+            // if (!userId) {
+            //     ctx.reply('User information not found. Please try again.');
+            //     return;
+            // }
+
             // const transactionReference = ctx.callbackQuery.data;
             console.log("this is the callback => ", transactionReference)
 
@@ -226,20 +252,13 @@ function callbackss(ctx, userCarts, existingCarts, bot, totalAmount){
             console.log("verify response 222 -->", verifyResponse);
 
             if (verifyResponse && verifyResponse.data && verifyResponse.data.status === 'success') {
-                const order = await Order.findOneAndUpdate(
-                    { user: user._id, status: 'Pending' },
-                    { status: 'Completed' },
-                    { new: true }
-                );
-    
-                if (order) {
+               
+                order_status='Completed';
                    // Transaction was successful
                     confirmation_paystack="#confirmed"
                     // ctx.editMessageText('Payment successful! Thank you for your purchase.');
-                    checkout(ctx, userCarts, existingCarts, bot, confirmation_paystack)
-                } else {
-                    ctx.reply('Error updating order status. Please contact support.');
-                }
+                    checkout(ctx, userCarts, existingCarts, bot, confirmation_paystack, order_status)
+               
                 
                 
             } else {

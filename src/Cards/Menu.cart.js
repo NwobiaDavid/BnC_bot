@@ -16,6 +16,7 @@ async function manageCart(ctx, bot, existingCarts, userCarts) {
     }
     
     // currentItemIndex = 0;
+    let totalCharges = 0; 
 
     const userId = ctx.from.id;
     const existingCart = existingCarts.get(userId) || {};
@@ -35,7 +36,25 @@ async function manageCart(ctx, bot, existingCarts, userCarts) {
 
         if (validItemDetails.length > 0) {
             const cartMessage = validItemDetails
-                .map((item) =>`${item.name} (Qty: ${item.quantity}) - $${item.price * item.quantity}`)
+                .map((item) => {
+                    const itemName = item.name;
+                    const itemQuantity = item.quantity;
+                    const itemPrice = item.price;
+                    const itemTotal = itemPrice * itemQuantity;
+
+                    // Calculate charges based on both item price and quantity
+                    let charges = 0;
+                    if (itemPrice < 200) {
+                        charges = itemQuantity * 50;
+                    } else if (itemPrice >= 200 && itemPrice <= 800) {
+                        charges = itemQuantity * 100;
+                    }
+
+                    // Sum up charges for each item
+                    totalCharges += charges;
+
+                    return `${itemName} (Qty: ${itemQuantity}) - $${itemTotal} (+ Charges: $${charges})`;
+                })
                 .join('\n');
                 // console.log('item', validItemDetails)
                 totalAmount = calculateTotalAmount(validItemDetails);
@@ -46,11 +65,11 @@ async function manageCart(ctx, bot, existingCarts, userCarts) {
                     ]);
 
                     // Send a new message with the updated content
-                    const editedMessage = await ctx.editMessageText(`Your Cart:\n${cartMessage}\n\nTotal Amount: $${totalAmount}`, keyboard);
+                    const editedMessage = await ctx.editMessageText(`Your Cart:\n${cartMessage}\n\nTotal Amount: #${totalAmount}\nTotal Charges: #${totalCharges}`, keyboard);
                     currentMessageId = editedMessage.message_id; // Update the current message ID
                     currentCartMessage = cartMessage; // Update the current cart message
 
-                   callbackss(ctx,userCarts, existingCarts, bot);
+                   callbackss(ctx,userCarts, existingCarts, bot, totalCharges);
         } else {
             ctx.reply('Some items in your cart could not be found.');
         }
@@ -133,7 +152,7 @@ async function editCart(ctx, userCarts, existingCarts, bot) {
     }
 }
 
-async function callbackss(ctx, userCarts, existingCarts, bot){
+async function callbackss(ctx, userCarts, existingCarts, bot, totalCharges){
     const inst =botx
     // console.log(inst)
 
@@ -144,7 +163,7 @@ async function callbackss(ctx, userCarts, existingCarts, bot){
 
     inst.action('checkout', async(ctx) => {
         // console.log('totalAmount==>', totalAmount)
-        await paymentOptions(ctx, userCarts, existingCarts, bot, totalAmount);
+        await paymentOptions(ctx, userCarts, existingCarts, bot, totalAmount, totalCharges);
     });
 }
 
