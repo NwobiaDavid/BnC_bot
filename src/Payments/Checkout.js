@@ -257,7 +257,7 @@ function callbackss(ctx, userCarts, existingCarts, bot, totalAmount, totalCharge
                    // Transaction was successful
                     confirmation_paystack="#confirmed"
                     // ctx.editMessageText('Payment successful! Thank you for your purchase.');
-                    checkout(ctx, userCarts, existingCarts, bot, confirmation_paystack, order_status)
+                    checkout(ctx, userCarts, existingCarts, bot, confirmation_paystack, order_status, totalCharges)
                
                 
                 
