@@ -37,8 +37,22 @@ bot.start(async (ctx) => {
  handleUserDetails(ctx, bot, displayMainMenu, existingCarts,userCarts)
 });
 
+function areOrdersAccepted() {
+  const currentDate = new Date();
+  const cutoffTime = new Date();
+  cutoffTime.setHours(18, 30, 0); // Set the cutoff time to 6:30 pm
+
+  return currentDate < cutoffTime;
+}
+
+
 // Function to display the main menu options with buttons
 function displayMainMenu(ctx, text) {
+   if (!areOrdersAccepted()) {
+    ctx.reply('Sorry, we are no longer accepting orders for today. Please come back tomorrow.');
+    return;
+  }
+  
   ctx.reply(text, {
     reply_markup: {
       inline_keyboard: [
@@ -93,10 +107,8 @@ bot.action('customer_support_others', (ctx) => {
 bot.action('change_delivery_location', (ctx) => {
   ctx.reply('Please provide your new delivery information (Hall and Room number).');
 
-  // Define the handler function separately
   async function updateDeliveryInformationHandler(ctx) {
     const newRoomNumber = ctx.message.text.trim();
-    // Update the user's room number in the database
     await User.updateOne(
       { telegramId: ctx.from.id },
       { roomNumber: newRoomNumber }
