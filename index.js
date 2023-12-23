@@ -40,7 +40,7 @@ bot.start(async (ctx) => {
 function areOrdersAccepted() {
   const currentDate = new Date();
   const cutoffTime = new Date();
-  cutoffTime.setHours(18, 30, 0); // Set the cutoff time to 6:30 pm
+  cutoffTime.setHours(23, 30, 0); // Set the cutoff time to 6:30 pm
 
   return currentDate < cutoffTime;
 }

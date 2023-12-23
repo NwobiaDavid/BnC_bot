@@ -1,13 +1,13 @@
 product_id,category,Item,price,quantity
-1,Beverages,Bottled Water,1.50,100
-2,Beverages,Cola,2.00,50
-3,Beverages,Orange Juice,2.49,30
+1,Beverages,Eva Bottled Water (1 can),1.50,100
+2,Beverages,Cola (100g),2.00,50
+3,Beverages,5-Alive Orange Juice (1L),2.49,30
 4,Beverages,Coffee,3.99,40
-5,Beverages,Energy Drink,2.99,25
-6,Clothing & Footwear,T-Shirt,15.99,30
-7,Clothing & Footwear,Running Shoes,49.99,20
-8,Clothing & Footwear,Jeans,29.99,25
-9,Clothing & Footwear,Sweater,24.99,15
+5,Beverages,Monster Energy Drink,2.99,25
+6,Clothing & Footwear,T-Shirt XL,15.99,30
+7,Clothing & Footwear,NIKE Running Shoes,49.99,20
+8,Clothing & Footwear,Blue Jeans,29.99,25
+9,Clothing & Footwear,Black Playboy Sweater,24.99,15
 10,Clothing & Footwear,Sneakers,19.99,30
 11,Groceries,Rice,5.99,80
 12,Groceries,Apples,1.99,50
