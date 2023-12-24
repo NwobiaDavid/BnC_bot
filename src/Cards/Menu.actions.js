@@ -4,6 +4,11 @@ const { Markup } = require('telegraf');
 const { MenuItem } = require('../../models');
 const { manageCart } = require('./Menu.cart')
 
+const fs = require('fs');
+const path = require('path');
+const photoPath = path.join(__dirname, '../assets/XAES.png');
+
+
 // Function to update user's temporary cart
 async function updateUserCart(userId, itemId, quantityChange, userCarts, ctx, inlineKeyboard) {
   const userCart = userCarts.get(userId) || {};
@@ -88,9 +93,41 @@ function registerButtonCallbacks(bot, itemId, userCarts, updateUserCart, selecte
     
   });
 
-  // bot.action('manage_cart', async (ctx) => {
-  //   manageCart(ctx, bot, existingCarts, userCarts)
-  // });
+  bot.action(`view_image_${itemId}`, async (ctx) => {
+    const photoBuffer1 = fs.readFileSync(photoPath);
+    const photoBuffer2 = fs.readFileSync(photoPath);
+
+    // const photoBuffer = fs.readFileSync(photoPath);
+
+    // if (photoBuffer) {
+    //     ctx.replyWithPhoto(
+    //         {source: photoBuffer},
+    //         {caption: `${selectedItem.itemName}:  #${selectedItem.price}`}
+    //     );
+    // } else {
+    //     ctx.reply(`${selectedItem.itemName}:  #${selectedItem.price} `, keyboard);
+    // }
+
+    if (photoBuffer1 && photoBuffer2) {
+      ctx.replyWithMediaGroup([
+          {
+            type: "photo",
+              media: { source: photoBuffer1 } ,
+            caption: `${selectedItem.itemName}: #${selectedItem.price} Photo 1`,
+          } , {
+            type: "photo",
+               media: { source: photoBuffer2 },
+            caption: `${selectedItem.itemName}: #${selectedItem.price} Photo 2`
+          }
+      ]);
+  } else {
+      ctx.reply(`${selectedItem.itemName}: #${selectedItem.price} `, keyboard);
+  }
+
+
+  });
+
+
 }
 
 function categoryAgent(categoryId, categoryName){
@@ -103,6 +140,7 @@ function updateInlineKeyboard(itemId, quantity, selectedItem, ctx) {
       [Markup.button.callback(`+1`, `increase_amount_${itemId}`),
        Markup.button.callback(`-1`, `decrease_amount_${itemId}`)],
       [Markup.button.callback(`Add to Cart`, `add_to_cart_${itemId}`)],
+      [Markup.button.callback(`View Image`, `view_image_${itemId}`)],
       [Markup.button.callback(`Back`, `category_${id}_${name}`)],
     ]);
   
@@ -112,10 +150,10 @@ function updateInlineKeyboard(itemId, quantity, selectedItem, ctx) {
         row.filter(btn => btn.callback_data !== `decrease_amount_${itemId}`)
       ).filter(row => row.length > 0);
     }
-  
-    ctx.editMessageText(`${selectedItem.itemName}: $${selectedItem.price}  -- Quantity: ${quantity}`, keyboard);
-  }
-  
+    ctx.editMessageText(`${selectedItem.itemName}: #${selectedItem.price}  -- Quantity: ${quantity}`, keyboard);
+    
+}
+
 
 // Function to move items from temporary cart to the actual cart
 function moveItemsToCart(userId, userCarts, existingCarts) {
@@ -145,13 +183,13 @@ async function handleMenuItemAction(existingCarts, userCarts, ctx, itemId, user,
     const selectedItem = await MenuItem.findById(itemId);
 
     if (selectedItem) {
-      // console.log(userCarts)
       const userCart = userCarts.get(user) || {};
       let quantity = userCart[itemId] || 1;
 
       const initialKeyboard = Markup.inlineKeyboard([
         [Markup.button.callback(`+1`, `increase_amount_${itemId}`)],
         [Markup.button.callback(`Add to Cart`, `add_to_cart_${itemId}`)],
+        [Markup.button.callback(`View Image`, `view_image_${itemId}`)],
         [Markup.button.callback(`Back`, `category_${id}_${name}`)],
       ]);
 
@@ -160,7 +198,6 @@ async function handleMenuItemAction(existingCarts, userCarts, ctx, itemId, user,
         initialKeyboard
       );
 
-      // Pass the 'user' variable to registerButtonCallbacks function
       registerButtonCallbacks(bot, itemId, userCarts, updateUserCart, selectedItem, quantity, ctx, user, existingCarts);
     } else {
       ctx.reply('Sorry, the selected menu item was not found.');
