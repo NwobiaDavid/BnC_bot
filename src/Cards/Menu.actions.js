@@ -2,12 +2,10 @@
 const mongoose = require('mongoose');
 const { Markup } = require('telegraf');
 const { MenuItem } = require('../../models');
-const { manageCart } = require('./Menu.cart')
+const { manageCart } = require('./Menu.cart');
 
 const fs = require('fs');
 const path = require('path');
-const photoPath = path.join(__dirname, '../assets/XAES.png');
-
 
 // Function to update user's temporary cart
 async function updateUserCart(userId, itemId, quantityChange, userCarts, ctx, inlineKeyboard) {
@@ -63,114 +61,108 @@ function registerButtonCallbacks(bot, itemId, userCarts, updateUserCart, selecte
     }
   });
 
-  bot.action(/add_to_cart_(.+)/, async(ctx) => {
+  bot.action(/add_to_cart_(.+)/, async (ctx) => {
     const itemId = ctx.match[1];
     const userId = ctx.from.id;
-  
+
     const userCart = userCarts.get(userId) || {};
-    
+
     // Check if the item is already in the cart
     if (userCart[itemId]) {
       ctx.answerCbQuery(`Item ${itemId} is already in the cart.`);
     } else {
-         const selectedItem = await MenuItem.findById(itemId);
-        const availableQuantity = selectedItem.quantity; 
-        const newQuantity = Math.min(availableQuantity, Math.max(0, 1));
+      const selectedItem = await MenuItem.findById(itemId);
+      const availableQuantity = selectedItem.quantity;
+      const newQuantity = Math.min(availableQuantity, Math.max(0, 1));
       userCart[itemId] = newQuantity;
       userCarts.set(userId, userCart);
     }
-      // Move items from temporary cart to the actual cart
-      moveItemsToCart(userId, userCarts, existingCarts);
-        
-      const menu_keyboard = Markup.inlineKeyboard([
-        [Markup.button.callback('Back', `category_${id}_${name}`)],
-        [Markup.button.callback('View Cart', 'manage_cart')],
-        [Markup.button.callback('Return to Home', 'browsing_categories')],
-      ])
+    // Move items from the temporary cart to the actual cart
+    moveItemsToCart(userId, userCarts, existingCarts);
+
+    const menu_keyboard = Markup.inlineKeyboard([
+      [Markup.button.callback('Back', `category_${id}_${name}`)],
+      [Markup.button.callback('View Cart', 'manage_cart')],
+      [Markup.button.callback('Return to Home', 'browsing_categories')],
+    ]);
+
     // Respond to the user
     ctx.answerCbQuery(`Added item to cart: ${itemId}.`);
-    ctx.editMessageText('what would you like to do next?',menu_keyboard )
-    
+    ctx.editMessageText('What would you like to do next?', menu_keyboard);
   });
 
   bot.action(`view_image_${itemId}`, async (ctx) => {
-    const photoBuffer1 = fs.readFileSync(photoPath);
-    const photoBuffer2 = fs.readFileSync(photoPath);
+    try {
+      const selectedItem = await MenuItem.findById(itemId);
 
-    // const photoBuffer = fs.readFileSync(photoPath);
+      if (!selectedItem) {
+        ctx.reply('Sorry, the selected menu item was not found.');
+        return;
+      }
 
-    // if (photoBuffer) {
-    //     ctx.replyWithPhoto(
-    //         {source: photoBuffer},
-    //         {caption: `${selectedItem.itemName}:  #${selectedItem.price}`}
-    //     );
-    // } else {
-    //     ctx.reply(`${selectedItem.itemName}:  #${selectedItem.price} `, keyboard);
-    // }
+      const photoBuffer1 = fs.readFileSync(path.join(__dirname, `../../${selectedItem.imageOne}`));
+      const photoBuffer2 = fs.readFileSync(path.join(__dirname, `../../${selectedItem.imageTwo}`));
 
-    if (photoBuffer1 && photoBuffer2) {
-      ctx.replyWithMediaGroup([
+      if (photoBuffer1 && photoBuffer2) {
+        ctx.replyWithMediaGroup([
           {
-            type: "photo",
-              media: { source: photoBuffer1 } ,
-            caption: `${selectedItem.itemName}: #${selectedItem.price} Photo 1`,
-          } , {
-            type: "photo",
-               media: { source: photoBuffer2 },
-            caption: `${selectedItem.itemName}: #${selectedItem.price} Photo 2`
-          }
-      ]);
-  } else {
-      ctx.reply(`${selectedItem.itemName}: #${selectedItem.price} `, keyboard);
-  }
-
-
+            type: 'photo',
+            media: { source: photoBuffer1 },
+            caption: `${selectedItem.itemName}: #${selectedItem.price} (Photo 1)`,
+          },
+          {
+            type: 'photo',
+            media: { source: photoBuffer2 },
+            caption: `${selectedItem.itemName}: #${selectedItem.price} (Photo 2)`,
+          },
+        ]);
+      } else {
+        ctx.reply(`${selectedItem.itemName}: #${selectedItem.price}`, keyboard);
+      }
+    } catch (error) {
+      console.error(`Error fetching menu item for ID ${itemId}:`, error);
+      ctx.reply('There was an error processing your request. Please try again.');
+    }
   });
-
-
 }
 
-function categoryAgent(categoryId, categoryName){
- id = categoryId;
- name = categoryName;
+function categoryAgent(categoryId, categoryName) {
+  id = categoryId;
+  name = categoryName;
 }
 
 function updateInlineKeyboard(itemId, quantity, selectedItem, ctx) {
-    let keyboard = Markup.inlineKeyboard([
-      [Markup.button.callback(`+1`, `increase_amount_${itemId}`),
-       Markup.button.callback(`-1`, `decrease_amount_${itemId}`)],
-      [Markup.button.callback(`Add to Cart`, `add_to_cart_${itemId}`)],
-      [Markup.button.callback(`View Image`, `view_image_${itemId}`)],
-      [Markup.button.callback(`Back`, `category_${id}_${name}`)],
-    ]);
-  
-    if (quantity === 0) {
-      // Use map and filter to remove the "-1" button if quantity is 0
-      keyboard.reply_markup.inline_keyboard = keyboard.reply_markup.inline_keyboard.map(row =>
-        row.filter(btn => btn.callback_data !== `decrease_amount_${itemId}`)
-      ).filter(row => row.length > 0);
-    }
-    ctx.editMessageText(`${selectedItem.itemName}: #${selectedItem.price}  -- Quantity: ${quantity}`, keyboard);
-    
-}
+  let keyboard = Markup.inlineKeyboard([
+    [Markup.button.callback(`+1`, `increase_amount_${itemId}`), Markup.button.callback(`-1`, `decrease_amount_${itemId}`)],
+    [Markup.button.callback(`Add to Cart`, `add_to_cart_${itemId}`)],
+    [Markup.button.callback(`View Image`, `view_image_${itemId}`)],
+    [Markup.button.callback(`Back`, `category_${id}_${name}`)],
+  ]);
 
+  if (quantity === 0) {
+    // Use map and filter to remove the "-1" button if quantity is 0
+    keyboard.reply_markup.inline_keyboard = keyboard.reply_markup.inline_keyboard
+      .map((row) => row.filter((btn) => btn.callback_data !== `decrease_amount_${itemId}`))
+      .filter((row) => row.length > 0);
+  }
+  ctx.editMessageText(`${selectedItem.itemName}: #${selectedItem.price}  -- Quantity: ${quantity}`, keyboard);
+}
 
 // Function to move items from temporary cart to the actual cart
 function moveItemsToCart(userId, userCarts, existingCarts) {
-    const userCart = userCarts.get(userId) || {};
-    const existingCart = existingCarts.get(userId) || {};
+  const userCart = userCarts.get(userId) || {};
+  const existingCart = existingCarts.get(userId) || {};
 
-    Object.keys(userCart).forEach((itemId) => {
-      const quantity = userCart[itemId];
-      existingCart[itemId] = (existingCart[itemId] || 0) + quantity;
-    });
-    // Update the existingCart in the map
-    existingCarts.set(userId, existingCart);
+  Object.keys(userCart).forEach((itemId) => {
+    const quantity = userCart[itemId];
+    existingCart[itemId] = (existingCart[itemId] || 0) + quantity;
+  });
+  // Update the existingCart in the map
+  existingCarts.set(userId, existingCart);
 
-    // Clear the temporary cart
-    userCarts.delete(userId);
-  }
-
+  // Clear the temporary cart
+  userCarts.delete(userId);
+}
 
 function handleQuantityUpdateError(error, ctx) {
   console.error('Error updating quantity:', error);
@@ -208,4 +200,4 @@ async function handleMenuItemAction(existingCarts, userCarts, ctx, itemId, user,
   }
 }
 
-module.exports = { handleMenuItemAction, updateUserCart , categoryAgent};
+module.exports = { handleMenuItemAction, updateUserCart, categoryAgent };

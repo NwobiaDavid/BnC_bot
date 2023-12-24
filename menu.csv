@@ -1,7 +1,7 @@
-product_id,category,Item,price,quantity
-1,Beverages,Eva Bottled Water (1 can),1.50,100
-2,Beverages,Cola (100g),2.00,50
-3,Beverages,5-Alive Orange Juice (1L),2.49,30
+product_id,category,Item,price,quantity,imageOne,imageTwo
+1,Beverages,Eva Bottled Water (1 can),1.50,100,src/assets/images/eva1.png,src/assets/images/eva2.jpg
+2,Beverages,Cola (100g),2.00,50,src/assets/images/coke1.jpg,src/assets/images/coke2.jpg
+3,Beverages,5-Alive Orange Juice (1L),2.49,30,src/assets/images/alive1.jpg,src/assets/images/alive2.webp
 4,Beverages,Coffee,3.99,40
 5,Beverages,Monster Energy Drink,2.99,25
 6,Clothing & Footwear,T-Shirt XL,15.99,30

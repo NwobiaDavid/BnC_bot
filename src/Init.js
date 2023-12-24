@@ -23,6 +23,9 @@ async function loadMenuData() {
           existingMenuItem.price = row.price;
           existingMenuItem.category = category._id;
           existingMenuItem.quantity = row.quantity;
+          existingMenuItem.imageOne = row.imageOne; 
+          existingMenuItem.imageTwo = row.imageTwo; 
+
           await existingMenuItem.save();
 
           // Update the category's items array
@@ -36,6 +39,8 @@ async function loadMenuData() {
             price: row.price,
             category: category._id,
             quantity: row.quantity,
+            imageOne: row.imageOne,
+            imageTwo: row.imageTwo,
           });
           await menuItem.save();
 

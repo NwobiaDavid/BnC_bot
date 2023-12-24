@@ -16,7 +16,9 @@ const menuItemSchema = new mongoose.Schema({
   category: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', required: true},
   itemName: { type: String, required: true },
   price: { type: Number, required: true },
-  quantity: {type: Number, required: true}
+  quantity: {type: Number, required: true},
+  imageOne: { type: String },
+  imageTwo: { type: String },
 });
 
 const MenuItem = mongoose.model('MenuItem', menuItemSchema);
