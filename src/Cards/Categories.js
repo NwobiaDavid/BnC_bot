@@ -58,6 +58,7 @@ async function browse_categories(ctx, bot, displayMainMenu, existingCarts,userCa
           reply_markup: {
             inline_keyboard: [
               [{ text: 'Start Shopping', callback_data: 'browsing_categories' }],
+              [{ text: 'Student Vendors', callback_data: 'browsing_stores' }],
               [{ text: 'Customer Support', callback_data: 'customer_support' }],
               [{ text: 'Manage Cart', callback_data: 'manage_cart' }],
               [

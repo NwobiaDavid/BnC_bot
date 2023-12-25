@@ -35,6 +35,7 @@ const Category = mongoose.model('Category', categorySchema);
 const storeSchema = new mongoose.Schema({
   store: {type: String, required: true},
   owner: {type: String, required: true},
+  ownerId: {type: String},
   items: [{ type: mongoose.Schema.Types.ObjectId, ref: 'StoreItem' }],
 })
 

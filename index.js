@@ -5,7 +5,7 @@ const fs = require('fs');
 const csv = require('csv-parser');
 const { User, MenuItem , Category} = require('./models');
 const { loadMenuData } = require('./src/Init');
-const { handleUserDetails } = require('./src/User');
+const { handleUserDetails, handleStart } = require('./src/User');
 // const {session} = require('telegraf/session');
 const { Types } = require('mongoose');
 const { browse_categories, callbackk } = require('./src/Cards/Categories');
@@ -38,12 +38,13 @@ loadMenuData();
 // Start the bot
 bot.start(async (ctx) => {
  handleUserDetails(ctx, bot, displayMainMenu, existingCarts,userCarts)
+ handleStart(ctx)
 });
 
 function areOrdersAccepted() {
   const currentDate = new Date();
   const cutoffTime = new Date();
-  cutoffTime.setHours(23, 30, 0); // Set the cutoff time to 6:30 pm
+  cutoffTime.setHours(18, 30, 0); // Set the cutoff time to 6:30 pm
 
   return currentDate < cutoffTime;
 }
@@ -60,7 +61,7 @@ function displayMainMenu(ctx, text) {
     reply_markup: {
       inline_keyboard: [
         [{ text: 'Start Shopping', callback_data: 'browsing_categories' }],
-        [{ text: 'Student Vendors', callback_data: 'browsing_store' }],
+        [{ text: 'Student Vendors', callback_data: 'browsing_stores' }],
         [{ text: 'Customer Support', callback_data: 'customer_support' }],
         [{ text: 'Manage Cart', callback_data: 'manage_cart' }],
         [
@@ -81,7 +82,7 @@ bot.action('browsing_categories', async (ctx) => {
       // callbackk(ctx, bot, displayMainMenu);
 });
 
-bot.action('browsing_store', async(ctx) => {
+bot.action('browsing_stores', async(ctx) => {
   browse_stores(ctx, bot, displayMainMenu,existingCarts,userCarts);
 })
 

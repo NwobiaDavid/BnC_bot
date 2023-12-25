@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const { User, MenuItem } = require('../models');
+const { User, MenuItem, Store } = require('../models');
 
 
 
@@ -57,4 +57,47 @@ async function handleUserDetails (ctx, bot, displayMainMenu,existingCarts,userCa
     }
   }
 
-module.exports = { handleUserDetails };
+  async function handleStart(ctx) {
+    console.log('owner started -------------------')
+    const existingUser = await User.findOne({ telegramId: ctx.from.id });
+    // const ownerName = await User.findOne({ name: ctx.from.id });
+    console.log('the existing user==>', existingUser)
+    if (existingUser) {
+        try {
+            // Find the store by owner's name
+            const stores = await Store.find({ owner: existingUser.name });
+
+            // if (store) {
+            //     // Update the owner's chat ID
+            //     store.ownerId = ctx.from.id;
+            //     await store.save();
+
+            //     // Inform the owner that their chat ID has been saved
+            //     console.log('Your chat ID has been saved as the owner\'s chat ID.');
+            // }else {
+            //   console.log('store not found')
+            // }
+
+            if (stores.length > 0) {
+              // Update the owner's chat ID for each store
+              for (const store of stores) {
+                  store.ownerId = ctx.from.id;
+                  await store.save();
+              }
+
+              // Inform the owner that their chat ID has been saved
+              console.log('Your chat ID has been saved as the owner\'s chat ID for all your stores.');
+          } else {
+              console.log('No stores found for the user.');
+          }
+
+        } catch (error) {
+            console.error('Error saving owner\'s chat ID:', error);
+            // ctx.reply('There was an error processing your request. Please try again.');
+        }
+    }else{
+      console.log('the user not found')
+    }
+}
+
+module.exports = { handleUserDetails ,handleStart};
