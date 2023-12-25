@@ -31,6 +31,27 @@ const categorySchema = new mongoose.Schema({
 
 const Category = mongoose.model('Category', categorySchema);
 
+//Store Model
+const storeSchema = new mongoose.Schema({
+  store: {type: String, required: true},
+  owner: {type: String, required: true},
+  items: [{ type: mongoose.Schema.Types.ObjectId, ref: 'StoreItem' }],
+})
+
+const Store = mongoose.model('Store', storeSchema);
+
+//Store Item Model
+const storeItemSchema = new mongoose.Schema({
+  store: { type: mongoose.Schema.Types.ObjectId, ref: 'Store', required: true},
+  itemName: { type: String, required: true },
+  price: { type: Number, required: true },
+  quantity: {type: Number, required: true},
+  imageOne: { type: String },
+  imageTwo: { type: String },
+});
+
+const StoreItem = mongoose.model('StoreItem', storeItemSchema)
+
 // Order Model
 const orderSchema = new mongoose.Schema({
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
@@ -43,4 +64,4 @@ const orderSchema = new mongoose.Schema({
 
 const Order = mongoose.model('Order', orderSchema);
 
-module.exports = { User, MenuItem, Order, Category};
+module.exports = { User, MenuItem, Order, Category, StoreItem, Store};

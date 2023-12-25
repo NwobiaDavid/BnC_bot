@@ -48,6 +48,12 @@ async function manageCart(ctx, bot, existingCarts, userCarts) {
                         charges = itemQuantity * 50;
                     } else if (itemPrice >= 200 && itemPrice <= 800) {
                         charges = itemQuantity * 100;
+                    } else if (itemPrice>800 && itemPrice<=1500){
+                        charges = itemQuantity * 200;
+                    }else if (itemPrice>1500 && itemPrice<=3000){
+                        charges = itemQuantity * 300;
+                    }else if (itemPrice>3000){
+                        charges = itemQuantity * 500;
                     }
 
                     // Sum up charges for each item
