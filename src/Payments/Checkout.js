@@ -51,10 +51,11 @@ async function checkout(ctx, userCarts, existingCarts, bot, confirmation, order_
             // Save the order to the database or perform any other necessary actions
             await order.save();
 
-            const storex =[]
+            // const storex =[]
 
-            const storeDetailsPromise = orderItems.map(async(item)=> {
-                const storeItem = await StoreItem.findById(item._id)
+            console.log("orderitem -- "+orderItems)
+            const storexPromise = orderItems.map(async(item)=> {
+                try{const storeItem = await StoreItem.findById(item._id)
                 // storex.push(storeItem);
 
                 const storeItemName= storeItem? storeItem.store : 'unknown'
@@ -62,12 +63,17 @@ async function checkout(ctx, userCarts, existingCarts, bot, confirmation, order_
                 const store = await Store.findOne({_id: storeItemName})
                 console.log("store var -- "+store)
                 const ownerId = store.ownerId;
-
-                storex.push(ownerId)
+                
+                return ownerId
+                // storex.push(ownerId)
+            }
+                catch(error){
+                    console.log('not a store item '+error)
+                }
 
             })
+            const storex = await Promise.all(storexPromise)
 
-            const storeDetails = await Promise.all(storeDetailsPromise)
 
             console.log('this is storeDetailsx--'+storex)
 
@@ -78,7 +84,7 @@ async function checkout(ctx, userCarts, existingCarts, bot, confirmation, order_
             callbackss(ctx, userCarts, existingCarts, bot, totalAmount, totalCharges, userId)
             // sendOrderDetailsToGroup(order, user, orderItems, confirmation, bot,userCarts, existingCarts,telegramId, userId)
             
-            sendOrderDetailsToOwner(order, user, orderItems, confirmation, bot, userCarts, existingCarts, telegramId, userId, storex );
+            // sendOrderDetailsToOwner(order, user, orderItems, confirmation, bot, userCarts, existingCarts, telegramId, userId, storex );
             // Retrieve ownerId from the first non-null storeDetails
             // const ownerId = orderItems.find(item => item && item.store);
             // console.log("ownerId==>",ownerId)
@@ -88,6 +94,7 @@ async function checkout(ctx, userCarts, existingCarts, bot, confirmation, order_
             //     console.error('Owner ID not found.');
             // }
             
+            await sendOrderDetails(order, user, orderItems, confirmation, bot, userCarts, existingCarts, telegramId, userId, storex);
 
             // Send a confirmation message to the user
             ctx.editMessageText('Your order has been placed! Thank you for shopping with us.\nPlease join our Telegram channel to get notified when we post any Updates @voom_official_channel', {
@@ -116,106 +123,71 @@ async function getItemDetails(itemId, model, existingCart) {
         : null;
 }
 
-async function sendOrderDetailsToOwner(order, user, orderItems, confirmation, bot, userCarts, existingCarts, telegramId, userId, storex) {
+
+async function sendOrderDetails(order, user, orderItems, confirmation, bot, userCarts, existingCarts, telegramId, userId, storex) {
     try {
         const groupId = process.env.ORDERS_GROUP_ID;
-        if (storex.length > 0) {
-            let ownerUsernames = [];
-            for (let ownerChatId of storex) {
-                try {
-                    const ownerChat = await bot.telegram.getChat(ownerChatId);
-                    if (ownerChat && ownerChat.username) {
-                        ownerUsernames.push(`@${ownerChat.username}`);
-                    } else {
-                        console.error(`Owner chat ID ${ownerChatId} not found or does not have a username.`);
-                    }
-                } catch (getChatError) {
-                    console.error(`Error getting chat info for ID ${ownerChatId}:`, getChatError.message);
-                    console.error('Error details:', getChatError.response);
+    
+        let ownerUsernames = [];
+        for (let ownerChatId of storex) {
+            try {
+                const ownerChat = await bot.telegram.getChat(ownerChatId);
+                console.log('owner chat ==>'+ ownerChat)
+                if (ownerChat && ownerChat.username) {
+                    ownerUsernames.push(`@${ownerChat.username}`);
+                } else {
+                    console.error(`Owner chat ID ${ownerChatId} not found or does not have a username.`);
                 }
-            }
-
-            if (ownerUsernames.length > 0) {
-                const itemDetailsPromises = orderItems.map(async (item) => {
-                    const storeItem = await StoreItem.findById(item._id);
-                    console.log("store ->", storeItem);
-
-                    const itemName = storeItem ? storeItem.itemName : 'Unknown Item';
-                    const itemPrice = storeItem ? storeItem.price : 'Unknown Item';
-
-                    // Reduce the quantity for each item in the database
-                    if (storeItem && storeItem.quantity >= item.quantity) {
-                        storeItem.quantity -= item.quantity;
-                        await storeItem.save();
-                    } else {
-                        console.error(`Error updating quantity for item: ${itemName}`);
-                    }
-
-                    return `${itemName} : #${itemPrice} (Qty: ${item.quantity || 1 })`;
-                });
-
-                const itemDetails = await Promise.all(itemDetailsPromises);
-
-                const userName = user.name || 'Unknown User';
-                const userRoomNumber = user.roomNumber || 'Unknown Room Number';
-
-                const orderDetailsMessage = `
-                    New Order:\n\nCustomer: ${userName}\nRoom Number: ${userRoomNumber}\nTotal Amount: #${order.totalAmount}\n\nItems:\n ${itemDetails.join('\n')}\n\nCreated At: ${order.createdAt}\nStatus: ${confirmation}\n\nOwners: ${ownerUsernames.join(', ')}
-                `;
-
-                // Send the order details message to the group
-                bot.telegram.sendMessage(groupId, orderDetailsMessage);
-            } else {
-                console.error('No store orders');
+            } catch (getChatError) {
+                console.error(`Error getting chat info for ID ${ownerChatId}:`, getChatError.message);
+                console.error('Error details:', getChatError.response);
             }
         }
+    
+        const processOrderItems = async (orderItems, model) => {
+            const itemDetailsPromises = orderItems.map(async (item) => {
+                const storeItem = await model.findById(item._id);
+    let itemName;
+    let itemPrice;
+               if(storeItem){ 
+                itemName= storeItem ? storeItem.itemName : 'Unknown Item';
+                itemPrice = storeItem ? storeItem.price : 'Unknown Item';
+            }
+    
+                // Reduce the quantity for each item in the database
+                if (storeItem && storeItem.quantity >= item.quantity) {
+                    storeItem.quantity -= item.quantity;
+                    await storeItem.save();
+                }
+    
+                return storeItem ? `${itemName} : #${itemPrice} (Qty: ${item.quantity || 1 })` : null;
+            });
+    
+            return await Promise.all(itemDetailsPromises);
+        }
+    
+        const storeItemDetails = await processOrderItems(orderItems, StoreItem);
+        const menuItemDetails = await processOrderItems(orderItems, MenuItem);
+    
+        const userName = user.name || 'Unknown User';
+        const userRoomNumber = user.roomNumber || 'Unknown Room Number';
+    
+        const orderDetailsMessage = `
+            New Order:\n\nCustomer: ${userName}\nRoom Number: ${userRoomNumber}\nTotal Amount: #${order.totalAmount}\n\nItems:\n${storeItemDetails.filter(item => item !== null).map((item, index) => (index === storeItemDetails.length - 1 ? item : item + '\n')) .join('')}${menuItemDetails.filter(item => item !== null).map((item, index) => (index === menuItemDetails.length - 1 ? item : item + '\n')) .join('')}\nCreated At: ${order.createdAt}\nStatus: ${confirmation}\n\nOwners: ${ownerUsernames.join(', ')}
+        `;
+    
+        // Send the order details message to the group
+        bot.telegram.sendMessage(groupId, orderDetailsMessage);
+
+         // Clear the user's cart
+    userCarts.set(telegramId, {});
+    existingCarts.set(telegramId, {});
+    
     } catch (error) {
-        console.error('Error sending order details to owner:', error);
+        console.error('Error sending order details:', error);
     }
+    
 }
-
-
-
-
-async function sendOrderDetailsToGroup(order, user, orderItems, confirmation, bot, userCarts, existingCarts,telegramId, userId) {
-    const groupId = process.env.ORDERS_GROUP_ID;
-    console.log("item id-->", orderItems)
-
-    const itemDetailsPromises = orderItems.map(async (item) => {
-        const menuItem = await MenuItem.findById(item._id);
-        console.log("menu ->", menuItem);
-
-        const itemName = menuItem ? menuItem.itemName : 'Unknown Item';
-        const itemPrice = menuItem ? menuItem.price : 'Unknown Item';
-
-        // Reduce the quantity for each item in the database
-        if (menuItem && menuItem.quantity >= item.quantity) {
-            menuItem.quantity -= item.quantity;
-            await menuItem.save();
-        } else {
-            console.error(`Error updating quantity for item: ${itemName}`);
-        }
-
-        return `${itemName} : #${itemPrice} (Qty: ${item.quantity || 1 })`;
-    });
-
-    const itemDetails = await Promise.all(itemDetailsPromises);
-
-    const userName = user.name || 'Unknown User';
-    const userRoomNumber = user.roomNumber || 'Unknown Room Number';
-
-    const orderDetailsMessage = `
-        New Order:\n\nCustomer: ${userName}\nRoom Number: ${userRoomNumber}\nTotal Amount: #${order.totalAmount}\n\nItems:\n ${itemDetails.join('\n')}\n\nCreated At: ${order.createdAt}\nStatus: ${confirmation}
-    `;
-
-    // Send the order details message to the group
-    bot.telegram.sendMessage(groupId, orderDetailsMessage);
-
-    // // Clear the user's cart
-    // userCarts.set(telegramId, {});
-    // existingCarts.set(telegramId, {});
-}
-
 
 function calculateTotalAmount(orderItems) {
     // Sum up the prices of items with consideration to their quantities

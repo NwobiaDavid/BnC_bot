@@ -67,7 +67,7 @@ async function manageCart(ctx, bot, existingCarts, userCarts) {
 
                     const keyboard = Markup.inlineKeyboard([
                         [Markup.button.callback('Edit Cart', 'edit_cart'), Markup.button.callback('Checkout', 'checkout')],
-                        [Markup.button.callback('Back to Categories', 'browsing_categories') , Markup.button.callback('Back to Stores', 'browsing_categories')],
+                        [Markup.button.callback('Back to Categories', 'browsing_categories') , Markup.button.callback('Back to Stores', 'browsing_stores')],
                     ]);
 
                     // Send a new message with the updated content

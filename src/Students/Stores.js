@@ -78,7 +78,12 @@ async function browse_stores(ctx, bot, displayMainMenu, existingCarts,userCarts)
         const storeId = ctx.match[1];
         const storeName = ctx.match[2];
       
-        storeAgent(storeId, storeName);
+        // Ensure storeAgent is correctly imported and exists
+        if (typeof storeAgent === 'function') {
+            storeAgent(storeId, storeName);
+          } else {
+            console.error('storeAgent is not a function.');
+          }
       
         try {
           const storeObjectId = new mongoose.Types.ObjectId(storeId);
