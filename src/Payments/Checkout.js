@@ -1,7 +1,7 @@
 require('dotenv').config();
 const paystack = require('paystack')(process.env.PAYSTACK_SECRET_KEY);
 const { Markup } = require('telegraf');
-const { Order, User, MenuItem, StoreItem } = require('../../models');
+const { Order, User, MenuItem, StoreItem, Store } = require('../../models');
 const mongoose = require('mongoose');
 const axios = require('axios')
 
@@ -24,6 +24,7 @@ async function checkout(ctx, userCarts, existingCarts, bot, confirmation, order_
         const userCart = userCarts.get(telegramId) || {};
         const existingCart = existingCarts.get(telegramId) || {};
 
+        
         console.log("existing cart--->", existingCart);
 
         // Check if the cart is not empty
@@ -50,21 +51,42 @@ async function checkout(ctx, userCarts, existingCarts, bot, confirmation, order_
             // Save the order to the database or perform any other necessary actions
             await order.save();
 
+            const storex =[]
+
+            const storeDetailsPromise = orderItems.map(async(item)=> {
+                const storeItem = await StoreItem.findById(item._id)
+                // storex.push(storeItem);
+
+                const storeItemName= storeItem? storeItem.store : 'unknown'
+                console.log('store item name '+storeItemName)
+                const store = await Store.findOne({_id: storeItemName})
+                console.log("store var -- "+store)
+                const ownerId = store.ownerId;
+
+                storex.push(ownerId)
+
+            })
+
+            const storeDetails = await Promise.all(storeDetailsPromise)
+
+            console.log('this is storeDetailsx--'+storex)
+
             // Clear the user's cart
             userCarts.set(userId, {});
             existingCarts.set(userId, {});
 
             callbackss(ctx, userCarts, existingCarts, bot, totalAmount, totalCharges, userId)
-            sendOrderDetailsToGroup(order, user, orderItems, confirmation, bot,userCarts, existingCarts,telegramId, userId)
+            // sendOrderDetailsToGroup(order, user, orderItems, confirmation, bot,userCarts, existingCarts,telegramId, userId)
             
+            sendOrderDetailsToOwner(order, user, orderItems, confirmation, bot, userCarts, existingCarts, telegramId, userId, storex );
             // Retrieve ownerId from the first non-null storeDetails
-            const ownerId = orderItems.find(item => item && item.store);
-            console.log("ownerId==>",ownerId)
-            if (ownerId && ownerId.ownerId) {
-                sendOrderDetailsToOwner(order, user, orderItems, confirmation, bot, userCarts, existingCarts, telegramId, userId, ownerId.ownerId);
-            } else {
-                console.error('Owner ID not found.');
-            }
+            // const ownerId = orderItems.find(item => item && item.store);
+            // console.log("ownerId==>",ownerId)
+            // if (ownerId && ownerId.ownerId) {
+            //     sendOrderDetailsToOwner(order, user, orderItems, confirmation, bot, userCarts, existingCarts, telegramId, userId, ownerId.ownerId);
+            // } else {
+            //     console.error('Owner ID not found.');
+            // }
             
 
             // Send a confirmation message to the user
@@ -86,70 +108,73 @@ async function checkout(ctx, userCarts, existingCarts, bot, confirmation, order_
 }
 
 async function getItemDetails(itemId, model, existingCart) {
+    // console.log('the model ->'+ model)
+    // console.log('the existing cart ->'+ existingCart)
     const item = await model.findById(itemId);
     return item
         ? { _id: item._id, quantity: existingCart[itemId], price: item.price }
         : null;
 }
 
-async function sendOrderDetailsToOwner(order, user, orderItems, confirmation, bot, userCarts, existingCarts, telegramId, userId) {
+async function sendOrderDetailsToOwner(order, user, orderItems, confirmation, bot, userCarts, existingCarts, telegramId, userId, storex) {
     try {
-        const storeIds = orderItems.map(item => item && item.store).filter(Boolean);
-
-        // Assuming that each order can contain items from multiple stores
-        for (const storeId of storeIds) {
-            const owner = await Store.findOne({ _id: storeId.ownerId });
-
-            if (!owner) {
-                console.error('Owner not found.');
-                continue; // Skip to the next iteration
+        const groupId = process.env.ORDERS_GROUP_ID;
+        if (storex.length > 0) {
+            let ownerUsernames = [];
+            for (let ownerChatId of storex) {
+                try {
+                    const ownerChat = await bot.telegram.getChat(ownerChatId);
+                    if (ownerChat && ownerChat.username) {
+                        ownerUsernames.push(`@${ownerChat.username}`);
+                    } else {
+                        console.error(`Owner chat ID ${ownerChatId} not found or does not have a username.`);
+                    }
+                } catch (getChatError) {
+                    console.error(`Error getting chat info for ID ${ownerChatId}:`, getChatError.message);
+                    console.error('Error details:', getChatError.response);
+                }
             }
 
-            const ownerChatId = owner.telegramId;
+            if (ownerUsernames.length > 0) {
+                const itemDetailsPromises = orderItems.map(async (item) => {
+                    const storeItem = await StoreItem.findById(item._id);
+                    console.log("store ->", storeItem);
 
-            const itemDetailsPromises = orderItems.map(async (item) => {
-                if (item && item.store && item.store.ownerId === owner._id) {
-                    const menuItem = await MenuItem.findById(item._id);
+                    const itemName = storeItem ? storeItem.itemName : 'Unknown Item';
+                    const itemPrice = storeItem ? storeItem.price : 'Unknown Item';
 
-                    if (menuItem) {
-                        const itemName = menuItem.itemName || 'Unknown Item';
-                        const itemPrice = menuItem.price || 'Unknown Item';
-
-                        // Reduce the quantity for each item in the database
-                        if (menuItem.quantity && menuItem.quantity >= item.quantity) {
-                            menuItem.quantity -= item.quantity;
-                            await menuItem.save();
-                        } else {
-                            console.error(`Error updating quantity for item: ${itemName}`);
-                        }
-
-                        return `${itemName} : #${itemPrice} (Qty: ${item.quantity || 1 })`;
+                    // Reduce the quantity for each item in the database
+                    if (storeItem && storeItem.quantity >= item.quantity) {
+                        storeItem.quantity -= item.quantity;
+                        await storeItem.save();
+                    } else {
+                        console.error(`Error updating quantity for item: ${itemName}`);
                     }
-                }
 
-                return null;
-            });
+                    return `${itemName} : #${itemPrice} (Qty: ${item.quantity || 1 })`;
+                });
 
-            const itemDetails = await Promise.all(itemDetailsPromises);
+                const itemDetails = await Promise.all(itemDetailsPromises);
 
-            const userName = user.name || 'Unknown User';
-            const userRoomNumber = user.roomNumber || 'Unknown Room Number';
+                const userName = user.name || 'Unknown User';
+                const userRoomNumber = user.roomNumber || 'Unknown Room Number';
 
-            const orderDetailsMessage = `
-                New Order:\n\nCustomer: ${userName}\nRoom Number: ${userRoomNumber}\nTotal Amount: #${order.totalAmount}\n\nItems:\n ${itemDetails.join('\n')}\n\nCreated At: ${order.createdAt}\nStatus: ${confirmation}
-            `;
+                const orderDetailsMessage = `
+                    New Order:\n\nCustomer: ${userName}\nRoom Number: ${userRoomNumber}\nTotal Amount: #${order.totalAmount}\n\nItems:\n ${itemDetails.join('\n')}\n\nCreated At: ${order.createdAt}\nStatus: ${confirmation}\n\nOwners: ${ownerUsernames.join(', ')}
+                `;
 
-            // Send the order details message to the owner
-            bot.telegram.sendMessage(ownerChatId, orderDetailsMessage);
-
-            // Clear the user's cart
-            userCarts.set(telegramId, {});
-            existingCarts.set(telegramId, {});
+                // Send the order details message to the group
+                bot.telegram.sendMessage(groupId, orderDetailsMessage);
+            } else {
+                console.error('No store orders');
+            }
         }
     } catch (error) {
         console.error('Error sending order details to owner:', error);
     }
 }
+
+
 
 
 async function sendOrderDetailsToGroup(order, user, orderItems, confirmation, bot, userCarts, existingCarts,telegramId, userId) {
@@ -186,9 +211,9 @@ async function sendOrderDetailsToGroup(order, user, orderItems, confirmation, bo
     // Send the order details message to the group
     bot.telegram.sendMessage(groupId, orderDetailsMessage);
 
-    // Clear the user's cart
-    userCarts.set(telegramId, {});
-    existingCarts.set(telegramId, {});
+    // // Clear the user's cart
+    // userCarts.set(telegramId, {});
+    // existingCarts.set(telegramId, {});
 }
 
 
