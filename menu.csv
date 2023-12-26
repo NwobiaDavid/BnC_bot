@@ -1,9 +1,12 @@
 product_id,category,Item,price,quantity,imageOne,imageTwo
-1,Beverages,Eva Bottled Water (1 can),1.50,100,src/assets/images/eva1.png,src/assets/images/eva2.jpg
-2,Beverages,Cola (100g),2.00,50,src/assets/images/coke1.jpg,src/assets/images/coke2.jpg
-3,Beverages,5-Alive Orange Juice (1L),2.49,30,src/assets/images/alive1.jpg,src/assets/images/alive2.webp
-4,Beverages,Coffee,3.99,40
-5,Beverages,Monster Energy Drink,2.99,25
+1,Beverages,Eva Bottled Water,100,100,src/assets/images/eva1.png,src/assets/images/eva2.jpg
+2,Beverages,Cola (50cl),200,50,src/assets/images/coke1.jpg,src/assets/images/coke2.jpg
+3,Beverages,5-Alive Orange Juice (100cl),2050,30,src/assets/images/alive1.jpg,src/assets/images/alive2.webp
+4,Beverages,Milo Crunchy Cereals 320g,1745,40,src/assets/images/miloPops.jpg,src/assets/images/miloPops2.webp
+5,Beverages,Monster Energy Drink,600,25,src/assets/images/monster.webp,src/assets/images/monster2.jpg
+5,Beverages,Dano Milk 350g,2620,25,src/assets/images/dano.jpg,src/assets/images/dano2.png
+5,Beverages,Nestle Milo Refill - 400g,2005,25,src/assets/images/milo2.jpg,src/assets/images/milo.jpg
+5,Beverages,Golden Morn 900g,2800,25,src/assets/images/goldenmorn.jpg,src/assets/images/goldenmorn2.jpg
 6,Clothing & Footwear,T-Shirt XL,15.99,30
 7,Clothing & Footwear,NIKE Running Shoes,49.99,20
 8,Clothing & Footwear,Blue Jeans,29.99,25
