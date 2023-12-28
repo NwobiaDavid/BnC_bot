@@ -42,28 +42,28 @@ async function manageCart(ctx, bot, existingCarts, userCarts) {
                     const itemPrice = item.price;
                     const itemTotal = itemPrice * itemQuantity;
 
-                    // Calculate charges based on both item price and quantity
-                    let charges = 0;
-                    if (itemPrice < 200) {
-                        charges = itemQuantity * 50;
-                    } else if (itemPrice >= 200 && itemPrice <= 800) {
-                        charges = itemQuantity * 100;
-                    } else if (itemPrice>800 && itemPrice<=1500){
-                        charges = itemQuantity * 200;
-                    }else if (itemPrice>1500 && itemPrice<=3000){
-                        charges = itemQuantity * 300;
-                    }else if (itemPrice>3000){
-                        charges = itemQuantity * 500;
-                    }
-
-                    // Sum up charges for each item
-                    totalCharges += charges;
-
-                    return `${itemName} (Qty: ${itemQuantity}) - $${itemTotal} (+ Charges: $${charges})`;
+                    return `${itemName} (Qty: ${itemQuantity}) - #${itemTotal}`;
                 })
                 .join('\n');
                 // console.log('item', validItemDetails)
                 totalAmount = calculateTotalAmount(validItemDetails);
+
+                // Calculate charges based on both item price and quantity
+                let charges = 0;
+                if (totalAmount < 200) {
+                    charges += 50;
+                } else if (totalAmount >= 200 && totalAmount <= 800) {
+                    charges += 100;
+                } else if (totalAmount>800 && totalAmount<=1500){
+                    charges += 200;
+                }else if (totalAmount>1500 && totalAmount<=3000){
+                    charges += 300;
+                }else if (totalAmount>3000){
+                    charges += 500;
+                }
+
+                // Sum up charges for each item
+                totalCharges += charges;
 
                     const keyboard = Markup.inlineKeyboard([
                         [Markup.button.callback('Edit Cart', 'edit_cart'), Markup.button.callback('Checkout', 'checkout')],
