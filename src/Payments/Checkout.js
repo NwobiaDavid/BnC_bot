@@ -201,7 +201,7 @@ function paymentOptions(ctx, userCarts, existingCarts, bot, totalAmount, totalCh
           inline_keyboard: [
             [{ text: 'Bank Transfer', callback_data: 'bank_transfer' }],
             [{ text: 'Pay with PayStack', callback_data: 'pay_with_payStack' }],
-            [{ text: 'Back', callback_data: 'browse_mainmenu' }],
+            [{ text: 'Back', callback_data: 'manage_cart' }],
           ],
         },
       });

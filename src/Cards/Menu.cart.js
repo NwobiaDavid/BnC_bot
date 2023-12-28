@@ -42,7 +42,7 @@ async function manageCart(ctx, bot, existingCarts, userCarts) {
                     const itemPrice = item.price;
                     const itemTotal = itemPrice * itemQuantity;
 
-                    return `${itemName} (Qty: ${itemQuantity}) - #${itemTotal}`;
+                    return `>>${itemName} (Qty: ${itemQuantity}) - #${itemTotal}`;
                 })
                 .join('\n');
                 // console.log('item', validItemDetails)
@@ -201,8 +201,8 @@ async function registerItemCallbacks(ctx, userCarts, existingCarts, item, bot, i
         editCart(ctx, userCarts, existingCarts, bot);
     });
 
-    botx.action('back_to_cart', (ctx) => { // Update the action name
-        manageCart(ctx, userCarts, existingCarts, bot); // Use the correct function
+    botx.action('back_to_cart', (ctx) => { 
+        manageCart(ctx, userCarts, existingCarts, bot); 
     });
 
     botx.action('next_item', (ctx) => {
