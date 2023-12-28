@@ -3,6 +3,7 @@ const { User, MenuItem, Category } = require('../../models');
 const { Telegraf, Markup } = require('telegraf');
 const { browse_menu } = require('./Menu');
 const { handleMenuItemAction, categoryAgent } = require('./Menu.actions');
+const { handleCategoryAction } = require('./Categories.action');
 
 let text='Main Menu!';
 
@@ -78,79 +79,10 @@ async function browse_categories(ctx, bot, displayMainMenu, existingCarts,userCa
         const categoryId = ctx.match[1];
         const categoryName = ctx.match[2];
 
-        categoryAgent(categoryId, categoryName);
-
-        try {
-          const categoryObjectId = new mongoose.Types.ObjectId(categoryId);
-          const categoryItems = await MenuItem.find({ category: categoryObjectId });
-
-          if (categoryItems.length > 0) {
-            let cp = 0; 
-           let currentItems;
-
-            const inlineKeyboard = () => {
-                const itemsPerPage = 5;
-                const startIdx = cp * itemsPerPage;
-                const endIdx = startIdx + itemsPerPage;
-                currentItems = categoryItems.slice(startIdx, endIdx);
-
-              const buttons = currentItems.map((item) => [
-                Markup.button.callback(
-                  `${item.itemName}: #${item.price}`,
-                  `menu_item_${item._id}`
-                ),
-              ]);
-
-              let navigationButtons = [];
-
-              if (endIdx < categoryItems.length) {
-                navigationButtons.push([Markup.button.callback('Next', 'next_menu_page')]);
-              }
-
-              if (cp > 0) {
-                navigationButtons.push([Markup.button.callback('Previous', 'prev_menu_page')]);
-              }
-
-              const Menus = [
-                [Markup.button.callback('Back', `browsing_categories`),
-                Markup.button.callback('MainMenu', 'browse_mainmenu')]
-              ]
-
-              return Markup.inlineKeyboard([...buttons, ...navigationButtons, ...Menus], {
-                columns: 1,
-              });
-            };
-
-            ctx.editMessageText(`${categoryName} category:`, inlineKeyboard());
-
-              // Define bot actions for page navigation
-            bot.action('prev_menu_page', (ctx) => {
-                if (cp > 0) {
-                cp--;
-                ctx.editMessageText(`${categoryName} category:`, inlineKeyboard());
-                }
-            });
-
-            bot.action('next_menu_page', (ctx) => {
-                if (cp < currentItems.length - 1) {
-                cp++;
-                ctx.editMessageText(`${categoryName} category:`, inlineKeyboard());
-                }
-            });
-
-          } else {
-            ctx.reply('No items found for the selected category.');
-          }
-        } catch (error) {
-          console.error('Error fetching category items:', error);
-          ctx.editMessageText('There was an error processing your request. Please try again.');
-        }
+        console.log('clothings here==> '+ctx.match)
+       
+        handleCategoryAction(ctx, bot,categoryId,categoryName)
       });
-
-    
-      // Map to store user carts (user_id => { item_id: quantity })
-      // const existingCarts = new Map();
-      // const userCarts = new Map();
 
       
       bot.action(/menu_item_(.+)/, async (ctx) => {

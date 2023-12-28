@@ -1,4 +1,5 @@
 const { Markup } = require('telegraf');
+const { User } = require('../../models');
 
 // Function to initiate customer support
 function initiateCustomerSupport(ctx, bot) {
@@ -9,6 +10,7 @@ function initiateCustomerSupport(ctx, bot) {
         [{ text: 'Delivery', callback_data: 'customer_support_delivery' }],
         [{ text: 'Platform', callback_data: 'customer_support_platform' }],
         [{ text: 'Others', callback_data: 'customer_support_others' }],
+        [{ text: 'Back', callback_data: 'browse_mainmenu' }],
       ],
     },
   });
@@ -16,7 +18,7 @@ function initiateCustomerSupport(ctx, bot) {
 
 // Function to collect user's email and issue
 async function collectEmail(ctx, bot, supportOption) {
-  ctx.editMessageText('Please provide your email address and your issue in this format: (email address) my issue');
+  ctx.editMessageText('Please provide your email address and your issue in this FORMAT: (email address) your issue');
 
   // Attach the 'text' event listener
   bot.on('text', handleText);
@@ -49,7 +51,8 @@ async function collectEmail(ctx, bot, supportOption) {
 // Define the handler function for describing the issue
 async function describeIssueHandler(ctx, email, userIssue, supportOption, bot) {
   const chat = ctx.update.message.from;
-  const userInformation = `Name: ${chat.first_name} ${chat.last_name}\nMatric Number: ${chat.username}\nEmail: ${email}\nChat ID: ${chat.id}`;
+  const user = await User.findOne({telegramId:ctx.from.id})
+  const userInformation = `Name: ${chat.first_name} ${chat.last_name}\nMatric Number: ${user.matricNumber}\nEmail: ${email}\nRoom number: ${user.roomNumber} `;
   const messageToSend = `Customer Support Issue:\n\n${userInformation}\n\nIssue regarding #${supportOption}:\n${userIssue}`;
 
   // Send the issue details to a Telegram group or channel

@@ -65,6 +65,23 @@ async function manageCart(ctx, bot, existingCarts, userCarts) {
                 // console.log('item', validItemDetails)
                 totalAmount = calculateTotalAmount(validItemDetails);
 
+                // Calculate charges based on both item price and quantity
+                let charges = 0;
+                if (totalAmount < 200) {
+                    charges += 50;
+                } else if (totalAmount >= 200 && totalAmount <= 800) {
+                    charges += 100;
+                } else if (totalAmount>800 && totalAmount<=1500){
+                    charges += 200;
+                }else if (totalAmount>1500 && totalAmount<=3000){
+                    charges += 300;
+                }else if (totalAmount>3000){
+                    charges += 500;
+                }
+
+                // Sum up charges for each item
+                totalCharges += charges;
+
                     const keyboard = Markup.inlineKeyboard([
                         [Markup.button.callback('Edit Cart', 'edit_cart'), Markup.button.callback('Checkout', 'checkout')],
                         [Markup.button.callback('Back to Categories', 'browsing_categories') , Markup.button.callback('Back to Stores', 'browsing_stores')],
@@ -201,8 +218,8 @@ async function registerItemCallbacks(ctx, userCarts, existingCarts, item, bot, i
         editCart(ctx, userCarts, existingCarts, bot);
     });
 
-    botx.action('back_to_cart', (ctx) => { // Update the action name
-        manageCart(ctx, userCarts, existingCarts, bot); // Use the correct function
+    botx.action('back_to_cart', (ctx) => { 
+        manageCart(ctx, userCarts, existingCarts, bot); 
     });
 
     botx.action('next_item', (ctx) => {
