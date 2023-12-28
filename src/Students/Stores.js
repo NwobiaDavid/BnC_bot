@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const { User, StoreItem, Store } = require('../../models');
 const { Telegraf, Markup } = require('telegraf');
 const { handleStoreItemAction, storeAgent } = require('./Store.actions');
+const { handleStoreItem } = require('./Store.items');
 
 let text='Main Menu!';
 
@@ -77,81 +78,10 @@ async function browse_stores(ctx, bot, displayMainMenu, existingCarts,userCarts)
       bot.action(/store_(.+)_([^ ]+)/, async (ctx) => {
         const storeId = ctx.match[1];
         const storeName = ctx.match[2];
-      
-        // Ensure storeAgent is correctly imported and exists
-        if (typeof storeAgent === 'function') {
-            storeAgent(storeId, storeName);
-          } else {
-            console.error('storeAgent is not a function.');
-          }
-      
-        try {
-          const storeObjectId = new mongoose.Types.ObjectId(storeId);
-          const storeItems = await StoreItem.find({ store: storeObjectId });
-          
-          console.log(storeItems.length+"<--store items and store obj id-->"+storeObjectId);
 
-          if (storeItems.length > 0) {
-            let cp = 0; 
-           let currentItems;
-            console.log('passed----')
-            const inlineKeyboard = () => {
-                const itemsPerPage = 5;
-                const startIdx = cp * itemsPerPage;
-                const endIdx = startIdx + itemsPerPage;
-                currentItems = storeItems.slice(startIdx, endIdx);
-
-              const buttons = currentItems.map((item) => [
-                Markup.button.callback(
-                  `${item.itemName}: #${item.price}`,
-                  `storeItem_${item._id}`
-                ),
-              ]);
-
-              let navigationButtons = [];
-
-              if (endIdx < storeItems.length) {
-                navigationButtons.push([Markup.button.callback('Next', 'next_store_page')]);
-              }
-
-              if (cp > 0) {
-                navigationButtons.push([Markup.button.callback('Previous', 'prev_store_page')]);
-              }
-
-              const Menus = [
-                [Markup.button.callback('Back', `browsing_stores`),
-                Markup.button.callback('MainMenu', 'browse_mainmenu')]
-              ]
-
-              return Markup.inlineKeyboard([...buttons, ...navigationButtons, ...Menus], {
-                columns: 1,
-              });
-            };
-
-            ctx.editMessageText(`${storeName} store:`, inlineKeyboard());
-
-              // Define bot actions for page navigation
-            bot.action('prev_store_page', (ctx) => {
-                if (cp > 0) {
-                cp--;
-                ctx.editMessageText(`${storeName} store:`, inlineKeyboard());
-                }
-            });
-
-            bot.action('next_store_page', (ctx) => {
-                if (cp < currentItems.length - 1) {
-                cp++;
-                ctx.editMessageText(`${storeName} store:`, inlineKeyboard());
-                }
-            });
-
-          } else {
-            ctx.reply('No items found for the selected store.');
-          }
-        } catch (error) {
-          console.error('Error fetching store items:', error);
-          ctx.editMessageText('There was an error processing your request. Please try again.');
-        }
+        console.log("ctx--<>"+ctx.match)
+        console.log('store id 1st =>'+storeId+"        "+storeName+"<= store name 1st")
+       handleStoreItem(ctx,bot, storeId,storeName)
       });
       
       bot.action(/storeItem_(.+)/, async (ctx) => {
