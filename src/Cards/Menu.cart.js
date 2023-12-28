@@ -42,7 +42,24 @@ async function manageCart(ctx, bot, existingCarts, userCarts) {
                     const itemPrice = item.price;
                     const itemTotal = itemPrice * itemQuantity;
 
-                    return `${itemName} (Qty: ${itemQuantity}) - #${itemTotal}`;
+                    // Calculate charges based on both item price and quantity
+                    let charges = 0;
+                    if (itemPrice < 200) {
+                        charges = itemQuantity * 50;
+                    } else if (itemPrice >= 200 && itemPrice <= 800) {
+                        charges = itemQuantity * 100;
+                    } else if (itemPrice>800 && itemPrice<=1500){
+                        charges = itemQuantity * 200;
+                    }else if (itemPrice>1500 && itemPrice<=3000){
+                        charges = itemQuantity * 300;
+                    }else if (itemPrice>3000){
+                        charges = itemQuantity * 500;
+                    }
+
+                    // Sum up charges for each item
+                    totalCharges += charges;
+
+                    return `${itemName} (Qty: ${itemQuantity}) - $${itemTotal} (+ Charges: $${charges})`;
                 })
                 .join('\n');
                 // console.log('item', validItemDetails)
@@ -201,8 +218,8 @@ async function registerItemCallbacks(ctx, userCarts, existingCarts, item, bot, i
         editCart(ctx, userCarts, existingCarts, bot);
     });
 
-    botx.action('back_to_cart', (ctx) => { // Update the action name
-        manageCart(ctx, userCarts, existingCarts, bot); // Use the correct function
+    botx.action('back_to_cart', (ctx) => { 
+        manageCart(ctx, userCarts, existingCarts, bot); 
     });
 
     botx.action('next_item', (ctx) => {

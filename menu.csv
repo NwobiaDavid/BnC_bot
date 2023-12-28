@@ -1,14 +1,17 @@
 product_id,category,Item,price,quantity,imageOne,imageTwo
-1,Beverages,Eva Bottled Water (1 can),1.50,100,src/assets/images/eva1.png,src/assets/images/eva2.jpg
-2,Beverages,Cola (100g),2.00,50,src/assets/images/coke1.jpg,src/assets/images/coke2.jpg
-3,Beverages,5-Alive Orange Juice (1L),2.49,30,src/assets/images/alive1.jpg,src/assets/images/alive2.webp
-4,Beverages,Coffee,3.99,40
-5,Beverages,Monster Energy Drink,2.99,25
-6,Clothing & Footwear,T-Shirt XL,15.99,30
-7,Clothing & Footwear,NIKE Running Shoes,49.99,20
-8,Clothing & Footwear,Blue Jeans,29.99,25
-9,Clothing & Footwear,Black Playboy Sweater,24.99,15
-10,Clothing & Footwear,Sneakers,19.99,30
+1,Beverages,Eva Bottled Water,100,100,src/assets/images/eva1.png,src/assets/images/eva2.jpg
+2,Beverages,Cola (50cl),200,50,src/assets/images/coke1.jpg,src/assets/images/coke2.jpg
+3,Beverages,5-Alive Orange Juice (100cl),2050,30,src/assets/images/alive1.jpg,src/assets/images/alive2.webp
+4,Beverages,Milo Crunchy Cereals 320g,1745,40,src/assets/images/miloPops.jpg,src/assets/images/miloPops2.webp
+5,Beverages,Monster Energy Drink,600,25,src/assets/images/monster.webp,src/assets/images/monster2.jpg
+5,Beverages,Dano Milk 350g,2620,25,src/assets/images/dano.jpg,src/assets/images/dano2.png
+5,Beverages,Nestle Milo Refill - 400g,2005,25,src/assets/images/milo2.jpg,src/assets/images/milo.jpg
+5,Beverages,Golden Morn 900g,2800,25,src/assets/images/goldenmorn.jpg,src/assets/images/goldenmorn2.jpg
+6,Clothing&Footwear,T-Shirt XL,15.99,30
+7,Clothing&Footwear,NIKE Running Shoes,49.99,20
+8,Clothing&Footwear,Blue Jeans,29.99,25
+9,Clothing&Footwear,Black Playboy Sweater,24.99,15
+10,Clothing&Footwear,Sneakers,19.99,30
 11,Groceries,Rice,5.99,80
 12,Groceries,Apples,1.99,50
 13,Groceries,Bread,2.49,40
@@ -30,22 +33,22 @@ product_id,category,Item,price,quantity,imageOne,imageTwo
 29,Deodorants,Powder Deodorant,4.49,30
 30,Deodorants,Deodorant Wipes,6.99,20
 31,Beverages,Tea,1.99,45
-32,Clothing & Footwear,Dress,39.99,15
+32,Clothing&Footwear,Dress,39.99,15
 33,Groceries,Cereal,3.49,30
 34,Accessories,Wallet,24.99,25
 35,Cleaning,Glass Cleaner,2.99,40
 36,Deodorants,Deodorant Cream,5.49,25
 37,Beverages,Smoothie,3.99,20
-38,Clothing & Footwear,Boots,44.99,18
+38,Clothing&Footwear,Boots,44.99,18
 39,Groceries,Chicken,7.99,15
 40,Accessories,Bracelet,19.99,20
 41,Cleaning,Sponges,1.99,50
 42,Deodorants,Deodorant Powder,4.29,30
 43,Beverages,Hot Chocolate,2.99,25
-44,Clothing & Footwear,Hoodie,22.99,22
+44,Clothing&Footwear,Hoodie,22.99,22
 45,Groceries,Pasta,1.79,40
 46,Accessories,Scarf,12.99,18
 47,Cleaning,Air Freshener,3.49,28
 48,Deodorants,Deodorant Gel,6.49,22
 49,Beverages,Lemonade,2.49,30
-50,Clothing & Footwear,Socks,5.99,35
+50,Clothing&Footwear,Socks,5.99,35
