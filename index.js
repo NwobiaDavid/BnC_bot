@@ -5,12 +5,14 @@ const fs = require('fs');
 const csv = require('csv-parser');
 const { User, MenuItem , Category} = require('./models');
 const { loadMenuData } = require('./src/Init');
-const { handleUserDetails } = require('./src/User');
+const { handleUserDetails, handleStart } = require('./src/User');
 // const {session} = require('telegraf/session');
 const { Types } = require('mongoose');
 const { browse_categories, callbackk } = require('./src/Cards/Categories');
 const { manageCart } = require('./src/Cards/Menu.cart');
 const { initiateCustomerSupport, collectEmail } = require('./src/Customer/CustomerSupport');
+const { browse_stores } = require('./src/Students/Stores');
+const { loadStoreData } = require('./src/Store.init');
 
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
@@ -30,11 +32,13 @@ const userCarts = new Map();
 
 // bot.use(preMiddleware)
 
+loadStoreData();
 loadMenuData();
 
 // Start the bot
 bot.start(async (ctx) => {
  handleUserDetails(ctx, bot, displayMainMenu, existingCarts,userCarts)
+ handleStart(ctx)
 });
 
 function areOrdersAccepted() {
@@ -57,6 +61,7 @@ function displayMainMenu(ctx, text) {
     reply_markup: {
       inline_keyboard: [
         [{ text: 'Start Shopping', callback_data: 'browsing_categories' }],
+        [{ text: 'Student Vendors', callback_data: 'browsing_stores' }],
         [{ text: 'Customer Support', callback_data: 'customer_support' }],
         [{ text: 'Manage Cart', callback_data: 'manage_cart' }],
         [
@@ -76,6 +81,10 @@ bot.action('browsing_categories', async (ctx) => {
       browse_categories(ctx, bot, displayMainMenu,existingCarts,userCarts);
       // callbackk(ctx, bot, displayMainMenu);
 });
+
+bot.action('browsing_stores', async(ctx) => {
+  browse_stores(ctx, bot, displayMainMenu,existingCarts,userCarts);
+})
 
 bot.action('manage_cart', async (ctx) => {
   manageCart(ctx, bot, existingCarts, userCarts)

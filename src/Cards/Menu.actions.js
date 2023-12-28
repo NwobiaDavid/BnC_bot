@@ -72,6 +72,7 @@ function registerButtonCallbacks(bot, itemId, userCarts, updateUserCart, selecte
       ctx.answerCbQuery(`Item ${itemId} is already in the cart.`);
     } else {
       const selectedItem = await MenuItem.findById(itemId);
+      console.log('selected item menu== '+selectedItem)
       const availableQuantity = selectedItem.quantity;
       const newQuantity = Math.min(availableQuantity, Math.max(0, 1));
       userCart[itemId] = newQuantity;
@@ -134,8 +135,8 @@ function categoryAgent(categoryId, categoryName) {
 function updateInlineKeyboard(itemId, quantity, selectedItem, ctx) {
   let keyboard = Markup.inlineKeyboard([
     [Markup.button.callback(`+1`, `increase_amount_${itemId}`), Markup.button.callback(`-1`, `decrease_amount_${itemId}`)],
-    [Markup.button.callback(`Add to Cart`, `add_to_cart_${itemId}`)],
     [Markup.button.callback(`View Image`, `view_image_${itemId}`)],
+    [Markup.button.callback(`Add to Cart`, `add_to_cart_${itemId}`)],
     [Markup.button.callback(`Back`, `category_${id}_${name}`)],
   ]);
 
@@ -180,8 +181,8 @@ async function handleMenuItemAction(existingCarts, userCarts, ctx, itemId, user,
 
       const initialKeyboard = Markup.inlineKeyboard([
         [Markup.button.callback(`+1`, `increase_amount_${itemId}`)],
-        [Markup.button.callback(`Add to Cart`, `add_to_cart_${itemId}`)],
         [Markup.button.callback(`View Image`, `view_image_${itemId}`)],
+        [Markup.button.callback(`Add to Cart`, `add_to_cart_${itemId}`)],
         [Markup.button.callback(`Back`, `category_${id}_${name}`)],
       ]);
 

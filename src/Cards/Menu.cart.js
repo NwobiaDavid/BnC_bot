@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const { Telegraf, Markup } = require('telegraf');
-const { MenuItem } = require('../../models');
+const { MenuItem, StoreItem } = require('../../models');
 const { paymentOptions } = require('../Payments/Checkout');
 
 var botx;
@@ -24,7 +24,7 @@ async function manageCart(ctx, bot, existingCarts, userCarts) {
     if (Object.keys(existingCart).length > 0) {
         const itemDetails = await Promise.all(
             Object.keys(existingCart).map(async (itemId) => {
-                const item = await MenuItem.findById(itemId);
+                const item = await MenuItem.findById(itemId) || await StoreItem.findById(itemId);
                 return item
                     ? { name: item.itemName, quantity: existingCart[itemId], price: item.price }
                     : null;
@@ -48,6 +48,12 @@ async function manageCart(ctx, bot, existingCarts, userCarts) {
                         charges = itemQuantity * 50;
                     } else if (itemPrice >= 200 && itemPrice <= 800) {
                         charges = itemQuantity * 100;
+                    } else if (itemPrice>800 && itemPrice<=1500){
+                        charges = itemQuantity * 200;
+                    }else if (itemPrice>1500 && itemPrice<=3000){
+                        charges = itemQuantity * 300;
+                    }else if (itemPrice>3000){
+                        charges = itemQuantity * 500;
                     }
 
                     // Sum up charges for each item
@@ -61,7 +67,7 @@ async function manageCart(ctx, bot, existingCarts, userCarts) {
 
                     const keyboard = Markup.inlineKeyboard([
                         [Markup.button.callback('Edit Cart', 'edit_cart'), Markup.button.callback('Checkout', 'checkout')],
-                        [Markup.button.callback('Back to Home', 'browsing_categories')],
+                        [Markup.button.callback('Back to Categories', 'browsing_categories') , Markup.button.callback('Back to Stores', 'browsing_stores')],
                     ]);
 
                     // Send a new message with the updated content
@@ -95,7 +101,7 @@ async function editCart(ctx, userCarts, existingCarts, bot) {
             const quantityInExistingCart = existingCart[itemId];
             const quantityInUserCart = userCart[itemId] || 0;
 
-            const itemDetails = await MenuItem.findById(itemId);
+            const itemDetails = await MenuItem.findById(itemId) || await StoreItem.findById(itemId);
             if (itemDetails) {
                 itemsInCart.push({
                     id: itemId,

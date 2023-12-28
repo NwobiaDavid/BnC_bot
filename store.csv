@@ -1,0 +1,15 @@
+store_id,store,Item,price,quantity,imageOne,imageTwo,owner
+1,Elegance,Maybelline Super Stay Full Coverage Powder 60 Caramel,11900,100,src/assets/images/stores/1.jpg,src/assets/images/stores/1.jpg,Nwobia david
+1,Elegance,Laura Mercier Loose Setting Powder (Dark Shade),6980,100,src/assets/images/stores/2.jpg,src/assets/images/stores/22.jpg,Nwobia david
+1,Elegance,Maybelline Fit Me Matte & Poreless Foundation 30Ml-364 Deep Bronze WithClay,8300,100,src/assets/images/stores/3.jpg,src/assets/images/stores/33.jpg,Nwobia david
+1,Elegance,L'Uodais Hair Repair Oil Serum + NO°5 Noir + Curl Keeper Spray,5000,100,src/assets/images/stores/4.jpg,src/assets/images/stores/4.jpg,Nwobia david
+1,Elegance,Green Mask Stick Facial Mask For Black Spots & Pimples,3000,100,src/assets/images/stores/5.jpg,src/assets/images/stores/55.jpg,Nwobia david
+1,Elegance,Eva Bottled Water (1 can),1.50,100,src/assets/images/eva1.png,src/assets/images/eva2.jpg,Nwobia david
+1,Elegance,Eva Bottled Water (1 can),1.50,100,src/assets/images/eva1.png,src/assets/images/eva2.jpg,Nwobia david
+1,Elegance,Eva Bottled Water (1 can),1.50,100,src/assets/images/eva1.png,src/assets/images/eva2.jpg,Nwobia david
+1,Elegance,Eva Bottled Water (1 can),1.50,100,src/assets/images/eva1.png,src/assets/images/eva2.jpg,Nwobia david
+1,Elegance,Eva Bottled Water (1 can),1.50,100,src/assets/images/eva1.png,src/assets/images/eva2.jpg,Nwobia david
+1,Elegance,Eva Bottled Water (1 can),1.50,100,src/assets/images/eva1.png,src/assets/images/eva2.jpg,Nwobia david
+1,Elegance,Eva Bottled Water (1 can),1.50,100,src/assets/images/eva1.png,src/assets/images/eva2.jpg,Nwobia david
+2,Fashionistas,Cola (100g),2.00,50,src/assets/images/coke1.jpg,src/assets/images/coke2.jpg,Nwobia david
+3,Academie,5-Alive Orange Juice (1L),2.49,30,src/assets/images/alive1.jpg,src/assets/images/alive2.webp,Jesiccan snito
